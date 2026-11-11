@@ -44,7 +44,13 @@ const rows = computed(() =>
     </header>
 
     <ol class="week__days">
-      <li v-for="row in rows" :key="row.date" class="day" :class="{ 'day--today': row.isToday }">
+      <li
+        v-for="(row, index) in rows"
+        :key="row.date"
+        class="day"
+        :class="{ 'day--today': row.isToday }"
+        :style="{ '--i': index }"
+      >
         <span class="day__when">
           <span class="day__name">{{ row.label }}</span>
           <span class="day__date">{{ row.date }}</span>
@@ -111,6 +117,23 @@ const rows = computed(() =>
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.week > header {
+  animation: reveal var(--dur-slow) var(--ease-out) both;
+}
+
+/* Days slide in one after another when the 5-day view opens. */
+.day {
+  animation: reveal var(--dur-slow) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 55ms + 60ms);
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
 }
 
 .day {

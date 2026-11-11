@@ -101,7 +101,7 @@ describe('WeatherBlock', () => {
     await flushPromises()
     expect(block.find('.skeleton').exists()).toBe(false)
     expect(block.find('h3').text()).toBe('Lviv')
-    expect(block.find('.card__temp').text()).toBe('−3°')
+    expect(block.find('.card__temp .visually-hidden').text()).toBe('−3°')
     expect(block.find('.card__desc').text()).toBe('Light snow')
     expect(block.text()).toContain('Feels like −6°')
     expect(block.find('.card__time').text()).toBe('Wed 11 Nov, 14:00')

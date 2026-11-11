@@ -26,7 +26,7 @@ test('first visit shows the visitor city with card and chart, accessible in both
   await page.goto('/')
   const block = page.locator('#panel-home section.block').first()
   await expect(block.getByRole('heading', { name: 'Kyiv' })).toBeVisible()
-  await expect(block.locator('.card__temp')).toHaveText('4°')
+  await expect(block.locator('.card__temp .visually-hidden')).toHaveText('4°')
   await expect(block.locator('canvas')).toBeVisible()
   await expectNoA11yViolations(page)
 

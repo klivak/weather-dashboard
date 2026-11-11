@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { City, CurrentWeather } from '@/api/models'
 import { cityName } from '@/api/models'
+import { useCountUp } from '@/composables/useCountUp'
 import { isDayIcon } from '@/domain/conditions'
 import { useI18n } from '@/i18n'
 import { compassPoint, formatDayDate, formatNumber, formatTemp, formatTime } from '@/utils/format'
@@ -15,6 +16,8 @@ defineSlots<{ actions?: () => unknown }>()
 const { t, locale } = useI18n()
 
 const name = computed(() => cityName(props.city, locale.value))
+/** The big number eases to each new reading; screen readers get the real value from the label. */
+const shownTemp = useCountUp(() => props.weather.temp)
 const region = computed(() => cityRegion(props.city, locale.value))
 const localNow = computed(() => {
   const { dt, timezone } = props.weather
@@ -80,7 +83,10 @@ const details = computed(() => {
         animated
       />
       <div>
-        <p class="card__temp">{{ formatTemp(weather.temp) }}</p>
+        <p class="card__temp">
+          <span class="visually-hidden">{{ formatTemp(weather.temp) }}</span>
+          <span aria-hidden="true">{{ formatTemp(shownTemp) }}</span>
+        </p>
         <p class="card__desc">{{ description }}</p>
         <p class="card__sub">
           {{ t('weather.feelsLike', { temp: formatTemp(weather.feelsLike) }) }}
@@ -111,6 +117,26 @@ const details = computed(() => {
 </template>
 
 <style scoped>
+/* Content rises in, part by part, when the card replaces its skeleton or the view switches to it. */
+.card > * {
+  animation: reveal var(--dur-slow) var(--ease-out) both;
+}
+
+.card > :nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.card > :nth-child(3) {
+  animation-delay: 140ms;
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
 .card {
   display: grid;
   align-content: start;
