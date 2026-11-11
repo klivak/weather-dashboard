@@ -32,6 +32,7 @@ function setup(initial: City | null = kyiv) {
 }
 
 beforeEach(() => {
+  localStorage.clear()
   api.getCurrentWeather
     .mockReset()
     .mockImplementation((c: City, lang: Locale) => Promise.resolve({ temp: c.id === 'k' ? 5 : 9, lang }))
@@ -108,7 +109,38 @@ describe('useWeather', () => {
   })
 })
 
+describe('useWeather snapshots', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('shows the last data for the city instantly, then refreshes it quietly', async () => {
+    const first = setup()
+    await flushPromises()
+    first.scope.stop()
+
+    api.getCurrentWeather.mockImplementation(() => new Promise(() => {}))
+    const { weather } = setup()
+    expect(weather.status.value).toBe('success')
+    expect(weather.current.value).toEqual({ temp: 5, lang: 'en' })
+    expect(api.getCurrentWeather).toHaveBeenCalledTimes(2)
+  })
+
+  it('ignores snapshots older than three hours', async () => {
+    const first = setup()
+    await flushPromises()
+    first.scope.stop()
+
+    const later = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 3 * 60 * 60 * 1000 + 1)
+    api.getCurrentWeather.mockImplementation(() => new Promise(() => {}))
+    const { weather } = setup()
+    expect(weather.status.value).toBe('loading')
+    expect(weather.current.value).toBeNull()
+    later.mockRestore()
+  })
+})
+
 describe('useWeather freshness', () => {
+  beforeEach(() => localStorage.clear())
+
   afterEach(() => {
     vi.useRealTimers()
     Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true })

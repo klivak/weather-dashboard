@@ -3,6 +3,7 @@ import type { ApiErrorKind } from '@/api/http'
 import { ApiError, isAbortError } from '@/api/http'
 import type { City, CurrentWeather, Forecast, Locale } from '@/api/models'
 import { getCurrentWeather, getForecast } from '@/api/owm'
+import { readSnapshot, writeSnapshot } from '@/api/snapshot'
 
 export type WeatherStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -14,6 +15,9 @@ const CHECK_EVERY_MS = 60 * 1000
  * Current weather and the 5-day forecast for a city, refetched when the city or language changes.
  * A new city clears the old data (the UI shows a skeleton); a language change keeps it on screen until the
  * translated descriptions arrive. Only the latest request can update the state.
+ *
+ * A snapshot of the last data for the same city and language (up to 3 hours old) is shown instantly and refreshed
+ * in the background, so returning visitors do not wait for the network.
  *
  * While the page stays open the data is refreshed quietly once it is 10 minutes old (only when the tab is visible,
  * and right away when the user comes back to it), and a failed load is retried when the connection returns.
@@ -42,6 +46,21 @@ export function useWeather(city: () => City | null | undefined, locale: () => Lo
 
     const own = new AbortController()
     controller = own
+
+    // Show the last known data at once and turn this into a background refresh.
+    if (!quiet) {
+      const snapshot = readSnapshot(target.id, locale())
+      if (snapshot) {
+        current.value = snapshot.current
+        forecast.value = snapshot.forecast
+        loadedCityId = target.id
+        loadedAt = snapshot.savedAt
+        status.value = 'success'
+        errorKind.value = null
+        quiet = true
+      }
+    }
+
     if (!quiet) {
       if (loadedCityId !== target.id) {
         current.value = null
@@ -63,6 +82,7 @@ export function useWeather(city: () => City | null | undefined, locale: () => Lo
       loadedAt = Date.now()
       status.value = 'success'
       errorKind.value = null
+      writeSnapshot(target.id, locale(), { current: now, forecast: next })
     } catch (error) {
       if (isAbortError(error) || controller !== own || quiet) return
       errorKind.value = error instanceof ApiError ? error.kind : 'network'
