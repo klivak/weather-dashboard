@@ -10,6 +10,11 @@ function reducedMotion(): boolean {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
 }
 
+/** The list gap the block takes with it: the one after it, or the one before it when it is last. */
+function gapSide(element: Element): string {
+  return element.parentElement?.lastElementChild === element ? 'marginTop' : 'marginBottom'
+}
+
 function rowGap(element: Element): number {
   const parent = element.parentElement
   return parent ? parseFloat(getComputedStyle(parent).rowGap) || 0 : 0
@@ -24,13 +29,30 @@ export function useBlockTransitions() {
     if (!canAnimate(element)) return done()
     const height = element.offsetHeight
     const gap = rowGap(element)
+    const side = gapSide(element)
+    const style = getComputedStyle(element)
+    const full = {
+      paddingTop: style.paddingTop,
+      paddingBottom: style.paddingBottom,
+      borderTopWidth: style.borderTopWidth,
+      borderBottomWidth: style.borderBottomWidth,
+    }
+    const none = { paddingTop: '0px', paddingBottom: '0px', borderTopWidth: '0px', borderBottomWidth: '0px' }
     element.style.overflow = 'hidden'
     element.style.pointerEvents = 'none'
+    element.style.boxSizing = 'border-box'
     const animation = element.animate(
       [
-        { height: `${height}px`, marginBottom: '0px', opacity: 1, transform: 'scale(1)' },
-        { height: `${height}px`, marginBottom: '0px', opacity: 0, transform: 'scale(0.97)', offset: 0.4 },
-        { height: '0px', marginBottom: `${-gap}px`, opacity: 0, transform: 'scale(0.97)' },
+        { height: `${height}px`, [side]: '0px', opacity: 1, transform: 'scale(1)', ...full },
+        {
+          height: `${height}px`,
+          [side]: '0px',
+          opacity: 0,
+          transform: 'scale(0.97)',
+          offset: 0.4,
+          ...full,
+        },
+        { height: '0px', [side]: `${-gap}px`, opacity: 0, transform: 'scale(0.97)', ...none },
       ],
       { duration: 520, easing: EASE },
     )
@@ -42,18 +64,35 @@ export function useBlockTransitions() {
     if (!canAnimate(element)) return done()
     const height = element.offsetHeight
     const gap = rowGap(element)
+    const side = gapSide(element)
+    const style = getComputedStyle(element)
+    const full = {
+      paddingTop: style.paddingTop,
+      paddingBottom: style.paddingBottom,
+      borderTopWidth: style.borderTopWidth,
+      borderBottomWidth: style.borderBottomWidth,
+    }
+    const none = { paddingTop: '0px', paddingBottom: '0px', borderTopWidth: '0px', borderBottomWidth: '0px' }
     element.style.overflow = 'hidden'
+    element.style.boxSizing = 'border-box'
     const animation = element.animate(
       [
-        { height: '0px', marginBottom: `${-gap}px`, opacity: 0, transform: 'translateY(8px) scale(0.98)' },
+        {
+          height: '0px',
+          [side]: `${-gap}px`,
+          opacity: 0,
+          transform: 'translateY(8px) scale(0.98)',
+          ...none,
+        },
         {
           height: `${height}px`,
-          marginBottom: '0px',
+          [side]: '0px',
           opacity: 0,
           transform: 'translateY(8px) scale(0.98)',
           offset: 0.45,
+          ...full,
         },
-        { height: `${height}px`, marginBottom: '0px', opacity: 1, transform: 'none' },
+        { height: `${height}px`, [side]: '0px', opacity: 1, transform: 'none', ...full },
       ],
       { duration: 520, easing: EASE },
     )

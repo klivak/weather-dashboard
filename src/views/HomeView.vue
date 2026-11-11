@@ -212,7 +212,9 @@ async function confirmRemove() {
 }
 
 .home__list {
-  display: grid;
+  /* Flex, not grid: a removed block collapses with a negative margin, which grid tracks ignore. */
+  display: flex;
+  flex-direction: column;
   gap: var(--space-5);
 }
 
