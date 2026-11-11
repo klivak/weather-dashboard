@@ -127,3 +127,52 @@ svg {
 :root:has(dialog[open]) {
   overflow: hidden;
 }
+
+/* Static first-paint shell in index.html (replaced when the app mounts); mirrors the header and a block skeleton. */
+.boot__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 84px;
+}
+
+.boot__title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+}
+
+.boot__tabs {
+  height: 45px;
+  border-bottom: 1px solid var(--border);
+}
+
+.boot__block {
+  display: grid;
+  gap: var(--space-4);
+  margin-block: var(--space-6);
+  padding: var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+
+.boot__block > span {
+  display: block;
+  height: 44px;
+  max-width: 420px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+}
+
+.boot__block > span:nth-child(2) {
+  width: 45%;
+  height: 30px;
+  border-radius: var(--radius-sm);
+}
+
+.boot__block > span:nth-child(3) {
+  max-width: none;
+  height: 300px;
+  border-radius: var(--radius-md);
+}

@@ -8,6 +8,8 @@
       name="description"
       content="Compare current weather, hourly temperature and the 5-day forecast for up to five cities side by side."
     />
+    <link rel="preconnect" href="https://geocoding-api.open-meteo.com" crossorigin />
+    <link rel="preconnect" href="https://get.geojs.io" crossorigin />
     <meta name="theme-color" content="#bfdcfa" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Weather Dashboard" />
@@ -26,11 +28,42 @@
         var hour = new Date().getHours()
         var theme = mode === 'day' || mode === 'night' ? mode : hour >= 7 && hour < 19 ? 'day' : 'night'
         document.documentElement.dataset.theme = theme
+
+        // First visit only: start the IP lookup now, in parallel with the app download (picked up by locateByIp).
+        try {
+          if (!localStorage.getItem('wd:blocks') && !sessionStorage.getItem('wd:ip-location')) {
+            window.__wdIpLookup = fetch('https://get.geojs.io/v1/ip/geo.json')
+              .then(function (response) {
+                return response.ok ? response.json() : null
+              })
+              .catch(function () {
+                return null
+              })
+          }
+        } catch (e) {}
       })()
     </script>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <div class="boot" aria-hidden="true">
+        <div class="container boot__header">
+          <svg width="36" height="36" viewBox="0 0 36 36">
+            <circle cx="14" cy="14" r="7.5" fill="var(--accent)" />
+            <path
+              d="M11 30a6 6 0 0 1-.4-12 8 8 0 0 1 15.3 2.3A4.9 4.9 0 0 1 25.5 30H11z"
+              fill="var(--surface-raised)"
+              stroke="var(--border-strong)"
+            />
+          </svg>
+          <span class="boot__title">Weather Dashboard</span>
+        </div>
+        <div class="container">
+          <div class="boot__tabs"></div>
+          <div class="boot__block"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+    </div>
     <noscript>Weather Dashboard needs JavaScript to load the forecast.</noscript>
     <script type="module" src="/src/main.ts"></script>
   </body>

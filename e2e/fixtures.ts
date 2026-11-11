@@ -50,7 +50,10 @@ export const PLACES: Place[] = [
   },
 ]
 
-function json(route: Route, body: unknown) {
+let latency = 0
+
+async function json(route: Route, body: unknown) {
+  if (latency) await new Promise((resolve) => setTimeout(resolve, latency))
   return route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -136,7 +139,11 @@ function forecast(place: Place, now: number) {
 }
 
 /** Route every external call of the app to fixtures. The IP service places the visitor in Kyiv. */
-export async function mockApis(page: Page, { now = Math.floor(Date.now() / 1000) } = {}) {
+export async function mockApis(
+  page: Page,
+  { now = Math.floor(Date.now() / 1000), latencyMs = 0 }: { now?: number; latencyMs?: number } = {},
+) {
+  latency = latencyMs
   await page.route('https://get.geojs.io/**', (route) =>
     json(route, { latitude: '50.458', longitude: '30.530', city: 'Kyiv' }),
   )

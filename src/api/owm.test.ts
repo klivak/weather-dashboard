@@ -165,6 +165,19 @@ describe('weather', () => {
 })
 
 describe('locateByIp', () => {
+  it('uses the lookup started by index.html and skips the first provider when that failed', async () => {
+    window.__wdIpLookup = Promise.resolve({ latitude: '50.45', longitude: '30.52', city: 'Kyiv' })
+    await expect(locateByIp()).resolves.toEqual({ lat: 50.45, lon: 30.52, city: 'Kyiv' })
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(window.__wdIpLookup).toBeUndefined()
+
+    sessionStorage.clear()
+    window.__wdIpLookup = Promise.resolve(null)
+    fetchMock.mockResolvedValueOnce(jsonResponse({ latitude: 49.84, longitude: 24.03 }))
+    await expect(locateByIp()).resolves.toEqual({ lat: 49.84, lon: 24.03 })
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('ipapi.co')
+  })
+
   it('uses the first provider that answers and caches the result for the session', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ latitude: '49.84', longitude: '24.03', city: 'Lviv' }))
     await expect(locateByIp()).resolves.toEqual({ lat: 49.84, lon: 24.03, city: 'Lviv' })
