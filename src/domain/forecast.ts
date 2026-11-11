@@ -56,6 +56,7 @@ export function todaySeries(
       nextDay: false,
       condition: current.condition,
       isDay: !current.condition.icon.endsWith('n'),
+      ...(upcoming[0] ? { pop: upcoming[0].pop } : {}),
     },
   ]
   for (const point of upcoming) {

@@ -30,7 +30,8 @@ const rows = computed(() =>
     label:
       day.date === props.today ? t('week.today') : formatShortWeekday(day.dt, props.timezone, locale.value),
     date: formatShortDate(day.dt, props.timezone, locale.value),
-    rain: day.pop >= 0.1 ? `${formatNumber(Math.round(day.pop * 100), locale.value)}%` : '',
+    rain: `${formatNumber(Math.round(day.pop * 100), locale.value)}%`,
+    dry: day.pop < 0.1,
   })),
 )
 </script>
@@ -62,21 +63,25 @@ const rows = computed(() =>
         <span class="day__avg" :aria-label="t('week.average', { temp: formatTemp(row.avg) })">
           {{ formatTemp(row.avg) }}
         </span>
-        <span
-          class="day__range"
-          :aria-label="t('week.range', { min: formatTemp(row.min), max: formatTemp(row.max) })"
-        >
-          <span>{{ formatTemp(row.min) }}</span>
-          <span class="day__range-sep" aria-hidden="true">/</span>
-          <span>{{ formatTemp(row.max) }}</span>
-        </span>
-        <span class="day__rain" :aria-label="row.rain ? t('week.rain', { pct: row.rain }) : undefined">
-          <template v-if="row.rain">
-            <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true">
+        <span class="day__stats">
+          <span
+            class="day__range"
+            :aria-label="t('week.range', { min: formatTemp(row.min), max: formatTemp(row.max) })"
+          >
+            <span>{{ formatTemp(row.min) }}</span>
+            <span class="day__range-sep" aria-hidden="true">/</span>
+            <span class="day__max">{{ formatTemp(row.max) }}</span>
+          </span>
+          <span
+            class="day__rain"
+            :class="{ 'day__rain--dry': row.dry }"
+            :aria-label="t('week.rain', { pct: row.rain })"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 3s7 7.6 7 12a7 7 0 0 1-14 0c0-4.4 7-12 7-12z" fill="currentColor" />
             </svg>
             {{ row.rain }}
-          </template>
+          </span>
         </span>
       </li>
     </ol>
@@ -141,7 +146,7 @@ const rows = computed(() =>
 /* A clean table: fixed columns so the numbers line up in every row, thin dividers, today on a soft fill. */
 .day {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 40px 44px 72px 50px;
+  grid-template-columns: minmax(0, 1fr) 40px 48px 84px;
   align-items: center;
   column-gap: var(--space-2);
   min-height: 56px;
@@ -198,11 +203,21 @@ const rows = computed(() =>
   text-align: right;
 }
 
+/* Low / high on top, chance of precipitation under it: one tidy column on the right. */
+.day__stats {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+
 .day__range {
   color: var(--text-muted);
   font-size: var(--text-sm);
-  text-align: right;
   white-space: nowrap;
+}
+
+.day__max {
+  color: var(--text);
 }
 
 .day__range-sep {
@@ -213,11 +228,15 @@ const rows = computed(() =>
 .day__rain {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 2px;
+  gap: 3px;
   color: var(--rain-text);
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
+}
+
+.day__rain--dry {
+  color: var(--text-muted);
+  font-weight: var(--weight-regular);
 }
 
 .week__note {
@@ -227,13 +246,9 @@ const rows = computed(() =>
 
 @media (max-width: 400px) {
   .day {
-    grid-template-columns: minmax(0, 1fr) 32px 36px 62px 44px;
+    grid-template-columns: minmax(0, 1fr) 34px 40px 74px;
     column-gap: var(--space-1);
     padding-inline: var(--space-2);
-  }
-
-  .day__range {
-    font-size: var(--text-xs);
   }
 }
 </style>

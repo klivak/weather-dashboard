@@ -31,7 +31,7 @@ export interface ChartPoint {
   highlight?: boolean
   /** Weather icon shown under the point. */
   icon?: { code: number; day: boolean }
-  /** Chance of precipitation 0..1, shown under the icon from 10%. */
+  /** Chance of precipitation 0..1, shown under the icon (muted below 10%). */
   pop?: number
 }
 
@@ -294,8 +294,8 @@ watch(
       >
         <span class="chart__label">{{ index % labelStep === 0 || point.highlight ? point.label : '' }}</span>
         <WeatherIcon v-if="point.icon" :code="point.icon.code" :day="point.icon.day" :size="26" />
-        <span class="chart__pop">{{
-          point.pop !== undefined && point.pop >= 0.1 ? `${Math.round(point.pop * 100)}%` : ''
+        <span class="chart__pop" :class="{ 'chart__pop--dry': point.pop !== undefined && point.pop < 0.1 }">{{
+          point.pop !== undefined ? `${Math.round(point.pop * 100)}%` : ''
         }}</span>
       </li>
     </ol>
@@ -346,6 +346,11 @@ watch(
 }
 
 /* Centred over its column; may overflow into an empty neighbour (labels alternate on narrow charts). */
+.chart__pop--dry {
+  color: var(--text-muted);
+  font-weight: var(--weight-regular);
+}
+
 .chart__label {
   min-height: 1.3em;
   color: var(--text-muted);
