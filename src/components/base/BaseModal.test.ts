@@ -1,18 +1,7 @@
 import { mount, type VueWrapper } from '@vue/test-utils'
-import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 import ConfirmDialog from './ConfirmDialog.vue'
-
-// jsdom has <dialog> but not its modal methods.
-beforeAll(() => {
-  HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
-    this.setAttribute('open', '')
-  }
-  HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
-    this.removeAttribute('open')
-    this.dispatchEvent(new Event('close'))
-  }
-})
 
 let wrapper: VueWrapper | undefined
 let openValue = true
