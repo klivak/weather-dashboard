@@ -10,10 +10,14 @@ export interface Coords {
 export interface City extends Coords {
   /** Stable id from rounded coordinates, so the same place found twice is one city. */
   id: string
+  /** GeoNames id when the city came from Open-Meteo; used to fetch its name in another language. */
+  geonameId?: number
   name: string
   names: Partial<Record<Locale, string>>
   country: string
+  /** Region (oblast, state) in the source language, and per locale when known. */
   state?: string
+  states?: Partial<Record<Locale, string>>
 }
 
 export interface Condition {

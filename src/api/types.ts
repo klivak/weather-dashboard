@@ -72,3 +72,17 @@ export interface IpApiResponse {
   city?: string
   error?: boolean
 }
+
+export interface OmPlace {
+  id: number
+  name: string
+  latitude: number
+  longitude: number
+  feature_code?: string
+  country_code?: string
+  admin1?: string
+}
+
+export interface OmSearchResponse {
+  results?: OmPlace[]
+}

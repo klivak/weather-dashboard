@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { locateByIp } from './ipLocation'
 import { cityName } from './models'
-import { clearOwmCache, getCurrentWeather, getForecast, reverseGeocode, searchCities } from './owm'
+import { clearOwmCache, getCurrentWeather, getForecast, reverseGeocode, findCitiesByName } from './owm'
 import type { OwmCurrent, OwmForecast, OwmGeoItem } from './types'
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -77,15 +77,15 @@ function requestedUrl(call = 0): URL {
   return new URL(String(fetchMock.mock.calls[call]?.[0]), 'http://localhost')
 }
 
-describe('searchCities', () => {
+describe('findCitiesByName', () => {
   it('skips queries shorter than 2 characters', async () => {
-    await expect(searchCities(' l ')).resolves.toEqual([])
+    await expect(findCitiesByName(' l ')).resolves.toEqual([])
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('calls the proxy without a key and maps cities with en/uk names', async () => {
     fetchMock.mockResolvedValue(jsonResponse([lviv, { ...lviv, lat: 49.8419 }]))
-    const cities = await searchCities('  Lviv ')
+    const cities = await findCitiesByName('  Lviv ')
 
     const requested = requestedUrl()
     expect(requested.pathname).toBe('/api/owm/geo/1.0/direct')
@@ -108,7 +108,7 @@ describe('searchCities', () => {
 
   it('falls back to the default name when a locale is missing', async () => {
     fetchMock.mockResolvedValue(jsonResponse([{ ...lviv, local_names: undefined }]))
-    const [city] = await searchCities('Lviv')
+    const [city] = await findCitiesByName('Lviv')
     expect(cityName(city!, 'uk')).toBe('Lviv')
   })
 })

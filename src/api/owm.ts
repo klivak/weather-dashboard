@@ -88,8 +88,8 @@ export function toForecast(raw: OwmForecast): Forecast {
   return { timezone: raw.city.timezone, sunrise: raw.city.sunrise, sunset: raw.city.sunset, points }
 }
 
-/** Cities matching a query, deduplicated by rounded coordinates. Language-independent: names for both locales come back together. */
-export async function searchCities(query: string, signal?: AbortSignal): Promise<City[]> {
+/** Cities whose name matches the query exactly (OpenWeatherMap does not match prefixes), deduplicated by rounded coordinates. */
+export async function findCitiesByName(query: string, signal?: AbortSignal): Promise<City[]> {
   const q = query.trim()
   if (q.length < 2) return []
   const raw = await cachedJson<OwmGeoItem[]>(url('/geo/1.0/direct', { q, limit: 5 }), {
