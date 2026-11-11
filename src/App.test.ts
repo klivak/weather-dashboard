@@ -125,7 +125,7 @@ describe('units switch', () => {
     const app = mountApp()
     const button = app.find('.header__units')
     expect(button.text()).toBe('°C')
-    expect(button.attributes('aria-label')).toBe('Temperature in Celsius. Switch to Fahrenheit')
+    expect(button.attributes('aria-label')).toBe('°C: temperature in Celsius. Switch to Fahrenheit')
     await button.trigger('click')
     expect(button.text()).toBe('°F')
     expect(JSON.parse(localStorage.getItem('wd:settings')!).units).toBe('imperial')

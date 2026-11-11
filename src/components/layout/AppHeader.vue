@@ -37,8 +37,8 @@ const themeIcons = { auto: IconAuto, day: IconSun, night: IconMoon }
 
 const unitsLabel = computed(() =>
   settings.units === 'metric'
-    ? t('units.toggle', { current: t('units.celsius'), next: t('units.fahrenheit') })
-    : t('units.toggle', { current: t('units.fahrenheit'), next: t('units.celsius') }),
+    ? t('units.toggle', { symbol: '°C', current: t('units.celsius'), next: t('units.fahrenheit') })
+    : t('units.toggle', { symbol: '°F', current: t('units.fahrenheit'), next: t('units.celsius') }),
 )
 
 function toggleUnits() {
