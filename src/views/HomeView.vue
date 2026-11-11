@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import { resolveDefaultCity } from '@/api/location'
+import { computed, nextTick, ref } from 'vue'
 import { cityName } from '@/api/models'
 import BaseButton from '@/components/base/BaseButton.vue'
 import ConfirmDialog from '@/components/base/ConfirmDialog.vue'
@@ -11,6 +10,7 @@ import IconPlus from '@/components/icons/IconPlus.vue'
 import IconTrash from '@/components/icons/IconTrash.vue'
 import WeatherBlock from '@/components/weather/WeatherBlock.vue'
 import { useAnnouncer } from '@/composables/useAnnouncer'
+import { useDefaultCity } from '@/composables/useDefaultCity'
 import { flashBlock, useBlockTransitions } from '@/composables/useBlockTransitions'
 import { useToasts } from '@/composables/useToasts'
 import { MAX_BLOCKS } from '@/domain/limits'
@@ -51,30 +51,7 @@ function nameOf(block: WeatherBlockState): string {
   return block.city ? cityName(block.city, locale.value) : ''
 }
 
-/** Block waiting for the visitor's city on a first visit. */
-const locatingId = ref<string | null>(null)
-const locateController = new AbortController()
-
-onMounted(async () => {
-  // First visit: fill the default block with the visitor's city (from their IP), falling back to Kyiv.
-  const first = store.blocks[0]
-  if (store.restored || !first || first.city) return
-  locatingId.value = first.id
-  try {
-    const { city, source } = await resolveDefaultCity(locateController.signal)
-    const block = store.blocks.find((item) => item.id === first.id)
-    // The user may have picked a city while we were looking; their choice wins.
-    if (!block || block.city) return
-    await store.setCity(block.id, city)
-    if (source === 'ip') void announce(t('location.detected', { city: cityName(city, locale.value) }))
-  } catch {
-    // Aborted on unmount.
-  } finally {
-    locatingId.value = null
-  }
-})
-
-onBeforeUnmount(() => locateController.abort())
+const { locatingId } = useDefaultCity()
 
 /** Chips for the sticky jump bar on phones: only blocks that show a city, and only when there are two or more. */
 const jumpTargets = computed(() => {
