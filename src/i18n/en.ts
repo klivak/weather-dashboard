@@ -20,7 +20,7 @@ export const en = {
   units: {
     celsius: 'Celsius',
     fahrenheit: 'Fahrenheit',
-    toggle: 'Temperature in {current}. Switch to {next}',
+    toggle: '{symbol}: temperature in {current}. Switch to {next}',
   },
   locales: {
     en: 'English',
@@ -157,6 +157,9 @@ export const en = {
     label: 'Updated {time}',
     justNow: 'just now',
     refresh: 'Refresh the weather',
+  },
+  jump: {
+    label: 'Jump to a city',
   },
   toast: {
     region: 'Notifications',

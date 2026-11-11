@@ -23,7 +23,7 @@ export const uk: Messages = {
   units: {
     celsius: 'Цельсій',
     fahrenheit: 'Фаренгейт',
-    toggle: 'Температура в градусах: {current}. Перемкнути на {next}',
+    toggle: '{symbol}: температура в градусах {current}. Перемкнути на {next}',
   },
   locales: {
     en: 'English',
@@ -161,6 +161,9 @@ export const uk: Messages = {
     label: 'Оновлено {time}',
     justNow: 'щойно',
     refresh: 'Оновити погоду',
+  },
+  jump: {
+    label: 'Перейти до міста',
   },
   toast: {
     region: 'Сповіщення',

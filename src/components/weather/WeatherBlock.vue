@@ -342,6 +342,16 @@ const errorText = computed(() => {
   }
 }
 
+@media (max-width: 1023px) {
+  .block {
+    scroll-margin-top: 64px;
+  }
+}
+
+.block:focus:not(:focus-visible) {
+  outline: none;
+}
+
 .block--favourite {
   border-color: color-mix(in srgb, var(--fav) 70%, transparent);
   box-shadow:

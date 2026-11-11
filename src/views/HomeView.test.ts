@@ -231,3 +231,23 @@ describe('HomeView reorder', () => {
     expect(home.find('[aria-haspopup="menu"]').exists()).toBe(false)
   })
 })
+
+describe('HomeView jump bar', () => {
+  it('lists the shown cities once there are two, and jumps to a block', async () => {
+    const home = mountHome()
+    await flushPromises()
+    expect(home.find('nav.jump').exists()).toBe(false)
+
+    const store = useBlocksStore()
+    store.add()
+    await store.setCity(store.blocks[1]!.id, lviv)
+    store.add()
+    await nextTick()
+    const chips = home.findAll('nav.jump button')
+    expect(chips.map((chip) => chip.text())).toEqual(['Kyiv', 'Lviv'])
+
+    await chips[1]?.trigger('click')
+    expect(document.activeElement?.id).toBe(`block-${store.blocks[1]!.id}`)
+    expect(chips[1]?.attributes('aria-current')).toBe('true')
+  })
+})

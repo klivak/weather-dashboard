@@ -5,6 +5,7 @@ import { cityName } from '@/api/models'
 import BaseButton from '@/components/base/BaseButton.vue'
 import ConfirmDialog from '@/components/base/ConfirmDialog.vue'
 import MenuButton from '@/components/base/MenuButton.vue'
+import CityJumpBar from '@/components/layout/CityJumpBar.vue'
 import FavouriteButton from '@/components/favourites/FavouriteButton.vue'
 import IconPlus from '@/components/icons/IconPlus.vue'
 import IconTrash from '@/components/icons/IconTrash.vue'
@@ -73,6 +74,14 @@ onMounted(async () => {
 
 onBeforeUnmount(() => locateController.abort())
 
+/** Chips for the sticky jump bar on phones: only blocks that show a city, and only when there are two or more. */
+const jumpTargets = computed(() => {
+  const targets = store.blocks.flatMap((block) =>
+    block.city ? [{ id: `block-${block.id}`, label: nameOf(block) }] : [],
+  )
+  return targets.length > 1 ? targets : []
+})
+
 function menuItems(index: number) {
   return [
     { id: 'up', label: t('home.moveUp'), disabled: index === 0 },
@@ -126,10 +135,14 @@ async function confirmRemove() {
 
 <template>
   <div class="home">
+    <CityJumpBar v-if="jumpTargets.length" :targets="jumpTargets" />
+
     <TransitionGroup ref="list" name="block" tag="div" class="home__list">
       <WeatherBlock
         v-for="(block, index) in store.blocks"
+        :id="`block-${block.id}`"
         :key="block.id"
+        tabindex="-1"
         :city="block.city"
         :label="t('home.blockLabel', { n: index + 1 })"
         :autofocus="block.id === focusId"
