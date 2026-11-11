@@ -8,7 +8,9 @@ import CitySearch from '@/components/search/CitySearch.vue'
 import { useNow } from '@/composables/useNow'
 import { useWeather } from '@/composables/useWeather'
 import { dailySummaries, localDateKey, todaySeries, type ForecastView } from '@/domain/forecast'
+import { currentInUnits, forecastInUnits } from '@/domain/units'
 import { useI18n } from '@/i18n'
+import { useSettingsStore } from '@/stores/settings'
 import { useThemeStore } from '@/stores/theme'
 import { formatDayDate, formatShortWeekday, formatTemp, formatTime } from '@/utils/format'
 import ChartSkeleton from './ChartSkeleton.vue'
@@ -57,9 +59,25 @@ const view = defineModel<ForecastView>('view', { default: 'day' })
 defineSlots<{ actions?: () => unknown }>()
 
 const { t, locale } = useI18n()
-const { current, forecast, status, errorKind, updatedAt, refreshing, refresh, reload } = useWeather(
+const {
+  current: rawCurrent,
+  forecast: rawForecast,
+  status,
+  errorKind,
+  updatedAt,
+  refreshing,
+  refresh,
+  reload,
+} = useWeather(
   () => props.city,
   () => locale.value,
+)
+
+const settings = useSettingsStore()
+/** Data in the units the user picked (°C/m/s or °F/mph); the API always answers in metric. */
+const current = computed(() => (rawCurrent.value ? currentInUnits(rawCurrent.value, settings.units) : null))
+const forecast = computed(() =>
+  rawForecast.value ? forecastInUnits(rawForecast.value, settings.units) : null,
 )
 
 const themeStore = useThemeStore()

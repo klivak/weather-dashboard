@@ -20,6 +20,11 @@ export const uk: Messages = {
     day: 'День',
     night: 'Ніч',
   },
+  units: {
+    celsius: 'Цельсій',
+    fahrenheit: 'Фаренгейт',
+    toggle: 'Температура в градусах: {current}. Перемкнути на {next}',
+  },
   locales: {
     en: 'English',
     uk: 'Українська',
@@ -62,6 +67,8 @@ export const uk: Messages = {
     speedUnit: 'м/с',
     pressureUnit: 'гПа',
     distanceUnit: 'км',
+    speedUnitImperial: 'миль/год',
+    distanceUnitImperial: 'миль',
     loading: 'Завантажуємо погоду…',
     pickCity: 'Знайдіть місто вище, щоб побачити погоду.',
     retry: 'Спробувати ще',

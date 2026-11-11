@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import type { Locale } from '@/api/models'
+import { isUnits, type Units } from '@/domain/units'
 import { detectLocale, isLocale } from '@/i18n/locale'
 import { isRecord, readStorage, writeStorage } from '@/utils/storage'
 
@@ -15,6 +16,7 @@ interface SavedSettings {
   v: 1
   locale: Locale
   theme: ThemeMode
+  units?: Units
 }
 
 export function isThemeMode(value: unknown): value is ThemeMode {
@@ -26,6 +28,7 @@ function parseSettings(value: unknown): Partial<SavedSettings> | null {
   const parsed: Partial<SavedSettings> = {}
   if (isLocale(value.locale)) parsed.locale = value.locale
   if (isThemeMode(value.theme)) parsed.theme = value.theme
+  if (isUnits(value.units)) parsed.units = value.units
   return parsed
 }
 
@@ -34,6 +37,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   const locale = ref<Locale>(saved?.locale ?? detectLocale())
   const themeMode = ref<ThemeMode>(saved?.theme ?? 'auto')
+  const units = ref<Units>(saved?.units ?? 'metric')
 
   function setLocale(next: Locale) {
     locale.value = next
@@ -43,9 +47,18 @@ export const useSettingsStore = defineStore('settings', () => {
     themeMode.value = next
   }
 
-  watch([locale, themeMode], () => {
-    writeStorage(SETTINGS_KEY, { v: 1, locale: locale.value, theme: themeMode.value } satisfies SavedSettings)
+  function setUnits(next: Units) {
+    units.value = next
+  }
+
+  watch([locale, themeMode, units], () => {
+    writeStorage(SETTINGS_KEY, {
+      v: 1,
+      locale: locale.value,
+      theme: themeMode.value,
+      units: units.value,
+    } satisfies SavedSettings)
   })
 
-  return { locale, themeMode, setLocale, setThemeMode }
+  return { locale, themeMode, units, setLocale, setThemeMode, setUnits }
 })

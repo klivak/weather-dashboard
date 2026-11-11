@@ -65,6 +65,7 @@ describe('settings store', () => {
       v: 1,
       locale: 'uk',
       theme: 'night',
+      units: 'metric',
     })
 
     setActivePinia(createPinia())

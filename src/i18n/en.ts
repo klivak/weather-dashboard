@@ -17,6 +17,11 @@ export const en = {
     day: 'Day',
     night: 'Night',
   },
+  units: {
+    celsius: 'Celsius',
+    fahrenheit: 'Fahrenheit',
+    toggle: 'Temperature in {current}. Switch to {next}',
+  },
   locales: {
     en: 'English',
     uk: 'Українська',
@@ -58,6 +63,8 @@ export const en = {
     speedUnit: 'm/s',
     pressureUnit: 'hPa',
     distanceUnit: 'km',
+    speedUnitImperial: 'mph',
+    distanceUnitImperial: 'mi',
     loading: 'Loading the weather…',
     pickCity: 'Search for a city above to see its weather.',
     retry: 'Try again',

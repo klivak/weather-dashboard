@@ -34,6 +34,16 @@ const themeOptions = computed(() => [
 ])
 
 const themeIcons = { auto: IconAuto, day: IconSun, night: IconMoon }
+
+const unitsLabel = computed(() =>
+  settings.units === 'metric'
+    ? t('units.toggle', { current: t('units.celsius'), next: t('units.fahrenheit') })
+    : t('units.toggle', { current: t('units.fahrenheit'), next: t('units.celsius') }),
+)
+
+function toggleUnits() {
+  settings.setUnits(settings.units === 'metric' ? 'imperial' : 'metric')
+}
 </script>
 
 <template>
@@ -49,6 +59,17 @@ const themeIcons = { auto: IconAuto, day: IconSun, night: IconMoon }
             <component :is="themeIcons[option.value]" class="header__theme-icon" :title="option.label" />
           </template>
         </SegmentedControl>
+        <button
+          type="button"
+          class="header__units"
+          :aria-label="unitsLabel"
+          :title="unitsLabel"
+          @click="toggleUnits"
+        >
+          <span :key="settings.units" class="header__units-text">
+            {{ settings.units === 'metric' ? '°C' : '°F' }}
+          </span>
+        </button>
         <SegmentedControl
           v-model="locale"
           :options="localeOptions"
@@ -88,6 +109,35 @@ const themeIcons = { auto: IconAuto, day: IconSun, night: IconMoon }
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+.header__units {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: var(--control-height-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  overflow: hidden;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.header__units:hover {
+  border-color: var(--border-strong);
+}
+
+.header__units-text {
+  animation: units-flip var(--dur-base) var(--ease-out);
+}
+
+@keyframes units-flip {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 
 .header__theme-icon {

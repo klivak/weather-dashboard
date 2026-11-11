@@ -119,3 +119,15 @@ describe('day and night look', () => {
     expect(document.documentElement.dataset.theme).toBe('night')
   })
 })
+
+describe('units switch', () => {
+  it('toggles between °C and °F from the header and remembers the choice', async () => {
+    const app = mountApp()
+    const button = app.find('.header__units')
+    expect(button.text()).toBe('°C')
+    expect(button.attributes('aria-label')).toBe('Temperature in Celsius. Switch to Fahrenheit')
+    await button.trigger('click')
+    expect(button.text()).toBe('°F')
+    expect(JSON.parse(localStorage.getItem('wd:settings')!).units).toBe('imperial')
+  })
+})

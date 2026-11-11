@@ -4,7 +4,9 @@ import type { City, CurrentWeather } from '@/api/models'
 import { cityName } from '@/api/models'
 import { useCountUp } from '@/composables/useCountUp'
 import { isDayIcon } from '@/domain/conditions'
+import { visibilityInUnits } from '@/domain/units'
 import { useI18n } from '@/i18n'
+import { useSettingsStore } from '@/stores/settings'
 import { compassPoint, formatDayDate, formatNumber, formatTemp, formatTime } from '@/utils/format'
 import { cityRegion } from '@/utils/region'
 import WeatherIcon from './WeatherIcon.vue'
@@ -14,6 +16,7 @@ const props = defineProps<{ city: City; weather: CurrentWeather }>()
 defineSlots<{ actions?: () => unknown; meta?: () => unknown }>()
 
 const { t, locale } = useI18n()
+const settings = useSettingsStore()
 
 const name = computed(() => cityName(props.city, locale.value))
 /** The big number eases to each new reading; screen readers get the real value from the label. */
@@ -37,7 +40,7 @@ const details = computed(() => {
     {
       key: 'wind',
       label: t('weather.wind'),
-      value: `${formatNumber(w.windSpeed, locale.value, 1)} ${t('weather.speedUnit')} ${t(`weather.compassShort.${compass.value}`)}`,
+      value: `${formatNumber(w.windSpeed, locale.value, 1)} ${settings.units === 'imperial' ? t('weather.speedUnitImperial') : t('weather.speedUnit')} ${t(`weather.compassShort.${compass.value}`)}`,
       title: t('weather.windFrom', { direction: t(`weather.compass.${compass.value}`) }),
     },
     {
@@ -51,7 +54,9 @@ const details = computed(() => {
       value:
         w.visibility === null
           ? '—'
-          : `${formatNumber(w.visibility / 1000, locale.value, 1)} ${t('weather.distanceUnit')}`,
+          : `${formatNumber(visibilityInUnits(w.visibility, settings.units), locale.value, 1)} ${
+              settings.units === 'imperial' ? t('weather.distanceUnitImperial') : t('weather.distanceUnit')
+            }`,
     },
     { key: 'sunrise', label: t('weather.sunrise'), value: formatTime(w.sunrise, tz, locale.value) },
     { key: 'sunset', label: t('weather.sunset'), value: formatTime(w.sunset, tz, locale.value) },

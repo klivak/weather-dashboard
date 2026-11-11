@@ -253,3 +253,20 @@ describe('WeatherBlock extras', () => {
     expect(wrapper.emitted('update:city')).toEqual([[odesa]])
   })
 })
+
+describe('WeatherBlock units', () => {
+  it('shows Fahrenheit, mph and miles when imperial units are chosen', async () => {
+    const block = mountBlock()
+    useSettingsStore().setUnits('imperial')
+    await flushPromises()
+    // −2.6 °C = 27.3 °F; 3.64 m/s = 8.1 mph; 8.5 km = 5.3 mi.
+    expect(block.find('.card__temp .visually-hidden').text()).toBe('27°')
+    const details = Object.fromEntries(
+      block.findAll('.card__detail').map((item) => [item.find('dt').text(), item.find('dd').text()]),
+    )
+    expect(details.Wind).toBe('8.1 mph W')
+    expect(details.Visibility).toBe('5.3 mi')
+    const points = block.findComponent({ name: 'TempChart' }).props('points') as { value: number }[]
+    expect(points[0]?.value).toBeCloseTo(27.32, 2)
+  })
+})
