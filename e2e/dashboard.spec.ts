@@ -75,7 +75,11 @@ test('search, 5-day view, favourites and removal work end to end', async ({ page
 
   // Everything survives a reload.
   await page.reload()
-  await expect(page.locator('.card__city').first()).toHaveText('London')
+  const restored = page.locator('#panel-home section.block').first()
+  await expect(restored.getByRole('heading', { name: 'London' })).toBeVisible()
+  // The block kept its 5-day view.
+  await expect(restored.locator('.week li')).toHaveCount(5)
+  await expect(restored.getByRole('radio', { name: '5 days' })).toHaveAttribute('aria-checked', 'true')
   await expect(page.getByRole('tab', { name: /Favourites/ })).toContainText('1')
 })
 
