@@ -85,6 +85,15 @@
   --shadow-1: 0 1px 2px rgb(30 60 110 / 0.06), 0 6px 20px rgb(30 60 110 / 0.08);
   --shadow-2: 0 2px 6px rgb(30 60 110 / 0.1), 0 24px 60px rgb(30 60 110 / 0.18);
   --stars-opacity: 0;
+  --icon-sun: #f5a524;
+  --icon-moon: #f3d98b;
+  --icon-cloud: #ffffff;
+  --icon-cloud-edge: rgb(20 44 84 / 0.16);
+  --icon-cloud-back: #c9d6e8;
+  --icon-cloud-dark: #dbe2ec;
+  --icon-rain: #3b82f6;
+  --icon-snow: #7aa7d9;
+  --icon-mist: #9aa9bf;
 }
 
 :root[data-theme='night'] {
@@ -112,4 +121,13 @@
   --shadow-1: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.25);
   --shadow-2: 0 2px 8px rgb(0 0 0 / 0.4), 0 28px 70px rgb(0 0 0 / 0.45);
   --stars-opacity: 1;
+  --icon-sun: #ffb547;
+  --icon-moon: #f6e2a6;
+  --icon-cloud: #dfe6f5;
+  --icon-cloud-edge: rgb(0 0 0 / 0.25);
+  --icon-cloud-back: #8592b3;
+  --icon-cloud-dark: #aab4cc;
+  --icon-rain: #7fb0ff;
+  --icon-snow: #c7dcff;
+  --icon-mist: #8f9bbb;
 }
