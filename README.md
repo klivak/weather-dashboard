@@ -8,7 +8,7 @@ Built with Vue 3, TypeScript, Pinia and Chart.js. All styling is hand-written CS
 
 - **City search with autocomplete.** Matches as you type in Latin or Cyrillic ("Lond" → London, "Хар" → Харків), highlights the match and shows the region to tell same-name places apart. Full keyboard support (WAI-ARIA combobox), loading, empty and error states.
 - **Today card.** Temperature, conditions, feels-like, humidity, wind with direction, pressure, visibility, sunrise and sunset, all in the city's own time zone.
-- **Hourly temperature chart.** Chart.js used directly: the live reading plus the 3-hour forecast for the rest of the local day; late in the evening it continues into the next morning and is titled "Next 24 hours".
+- **Hourly temperature chart.** Chart.js used directly: the live reading plus the 3-hour forecast for the rest of the city's current day. Late in the evening, when only a point or two is left, it continues into the next morning behind a dashed "Tomorrow" line.
 - **Up to five weather blocks.** One block by default, "+" adds another fully working block, removal asks for confirmation in a modal.
 - **Favourites tab.** Star a city to keep it; favourite blocks get a gold ring. The tab shows a block per favourite with no city search, only the Day / 5 days switch. Stored in `localStorage`, at most five; starring a sixth opens a dialog listing the saved cities so you can swap one out.
 - **Day / 5 days.** Card and chart switch to five days; a day's temperature is the mean of its 3-hour forecasts, with the daily low–high shown as a band.

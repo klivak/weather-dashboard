@@ -102,7 +102,7 @@ export const uk: Messages = {
     weekSummary: 'Прогноз на 5 днів, {city}: найтепліше {warm}, {warmTemp}; найхолодніше {cold}, {coldTemp}.',
     range: 'Мін … макс',
     title: 'Температура сьогодні',
-    titleNext: 'Найближча доба',
+    tomorrow: 'Завтра',
     subtitle: 'Кожні 3 години, місцевий час',
     now: 'Зараз',
     summary: 'Температура, {city}: зараз {now}, найвища {max} о {maxTime}, найнижча {min} о {minTime}.',

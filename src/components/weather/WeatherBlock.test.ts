@@ -73,7 +73,7 @@ function mountBlock(city: City | null = lviv, locale: 'en' | 'uk' = 'en') {
         TempChart: {
           name: 'TempChart',
           template: '<div class="chart-stub" />',
-          props: ['points', 'title', 'summary'],
+          props: ['points', 'title', 'summary', 'boundaryIndex', 'boundaryLabel'],
         },
       },
     },
@@ -134,7 +134,8 @@ describe('WeatherBlock', () => {
       label: string
     }[]
     expect(points[0]).toMatchObject({ highlight: true, label: 'Now' })
-    expect(points.length).toBeGreaterThanOrEqual(8)
+    // 14:00 local: 15:00, 18:00 and 21:00 remain today, enough for a chart of the current day only.
+    expect(points.map((point) => point.label)).toEqual(['Now', '15:00', '18:00', '21:00'])
   })
 
   it('shows a readable error and retries', async () => {
@@ -164,21 +165,23 @@ describe('WeatherBlock', () => {
   })
 })
 
-describe('WeatherBlock chart title', () => {
-  it('says "today" when the series stays within the local day and "next 24 hours" otherwise', async () => {
-    const morning = { ...current, dt: Date.UTC(2026, 10, 11, 0, 0) / 1000 } // 02:00 local
-    api.getCurrentWeather.mockResolvedValue(morning)
-    api.getForecast.mockResolvedValue({ ...forecast, points: forecast.points.slice(0, 3) })
+describe('WeatherBlock hourly chart', () => {
+  it('is about the current day and marks tomorrow only when a late evening borrows its points', async () => {
     const block = mountBlock()
     await flushPromises()
-    expect(block.findComponent({ name: 'TempChart' }).props('title')).toBe('Temperature today')
+    const chart = block.findComponent({ name: 'TempChart' })
+    expect(chart.props('title')).toBe('Temperature today')
+    expect(chart.props('boundaryIndex')).toBeUndefined()
     block.unmount()
 
-    api.getCurrentWeather.mockResolvedValue(current)
-    api.getForecast.mockResolvedValue(forecast)
+    // 22:30 local: no points left today, so the chart continues into tomorrow behind a marked boundary.
+    api.getCurrentWeather.mockResolvedValue({ ...current, dt: NOW + 8.5 * 3600 })
     const evening = mountBlock()
     await flushPromises()
-    expect(evening.findComponent({ name: 'TempChart' }).props('title')).toBe('Next 24 hours')
+    const lateChart = evening.findComponent({ name: 'TempChart' })
+    expect(lateChart.props('title')).toBe('Temperature today')
+    expect(lateChart.props('boundaryIndex')).toBe(1)
+    expect(lateChart.props('boundaryLabel')).toBe('Tomorrow')
   })
 })
 

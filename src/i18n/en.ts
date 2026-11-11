@@ -98,7 +98,7 @@ export const en = {
     weekSummary: '5-day forecast for {city}: warmest {warm} at {warmTemp}, coldest {cold} at {coldTemp}.',
     range: 'Low … high',
     title: 'Temperature today',
-    titleNext: 'Next 24 hours',
+    tomorrow: 'Tomorrow',
     subtitle: 'Every 3 hours, local time',
     now: 'Now',
     summary: 'Temperature in {city}: now {now}, highest {max} at {maxTime}, lowest {min} at {minTime}.',

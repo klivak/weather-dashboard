@@ -36,6 +36,9 @@ const props = defineProps<{
   subtitle: string
   /** One-sentence description for screen readers. */
   summary: string
+  /** Index of the first point of the next day, marked with a dashed line and `boundaryLabel`. */
+  boundaryIndex?: number
+  boundaryLabel?: string
 }>()
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip)
@@ -59,6 +62,38 @@ function reducedMotion(): boolean {
 
 /** Index of the main line among the datasets (the band datasets come first so they draw underneath). */
 const mainIndex = () => (hasRange.value ? 2 : 0)
+
+/** Dashed line between the last point of today and the first of tomorrow, with a small label. */
+const dayBoundary: Plugin<'line'> = {
+  id: 'dayBoundary',
+  beforeDatasetsDraw(target) {
+    const index = props.boundaryIndex
+    if (index === undefined || index <= 0) return
+    const meta = target.getDatasetMeta(mainIndex())
+    const before = meta.data[index - 1]
+    const after = meta.data[index]
+    if (!before || !after) return
+    const x = (before.x + after.x) / 2
+    const { ctx, chartArea } = target
+    ctx.save()
+    ctx.strokeStyle = cssVar('--border-strong')
+    ctx.setLineDash([4, 4])
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(x, chartArea.top)
+    ctx.lineTo(x, chartArea.bottom)
+    ctx.stroke()
+    if (props.boundaryLabel) {
+      ctx.setLineDash([])
+      ctx.font = `500 11px ${cssVar('--font-sans')}`
+      ctx.fillStyle = cssVar('--text-muted')
+      ctx.textAlign = 'left'
+      ctx.textBaseline = 'top'
+      ctx.fillText(props.boundaryLabel, x + 6, chartArea.top + 2)
+    }
+    ctx.restore()
+  },
+}
 
 /** Draws each value above its point, so the chart reads without a y-axis. */
 const valueLabels: Plugin<'line'> = {
@@ -178,7 +213,7 @@ function buildConfig(): ChartConfiguration<'line', number[], string> {
         },
       },
     },
-    plugins: [valueLabels],
+    plugins: [dayBoundary, valueLabels],
   }
 }
 
@@ -192,7 +227,7 @@ onMounted(render)
 onBeforeUnmount(() => chart?.destroy())
 
 // New data or labels: rebuild on the same canvas. Theme: colours come from CSS, so rebuild after the DOM updates.
-watch(() => props.points, render, { deep: true })
+watch([() => props.points, () => props.boundaryIndex, () => props.boundaryLabel], render, { deep: true })
 watch(
   () => themeStore.theme,
   () => nextTick(render),

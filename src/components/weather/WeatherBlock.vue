@@ -110,12 +110,10 @@ const weekPoints = computed<ChartPoint[]>(() =>
   })),
 )
 
-/** Late in the day the hourly series runs into tomorrow; the title then says so instead of "today". */
-const crossesMidnight = computed(() => {
-  const first = series.value[0]
-  if (!first) return false
-  const firstDate = localDateKey(first.dt, timezone.value)
-  return series.value.some((point) => localDateKey(point.dt, timezone.value) !== firstDate)
+/** Late in the evening the hourly series borrows tomorrow's first points; the chart marks where they start. */
+const boundaryIndex = computed(() => {
+  const index = series.value.findIndex((point) => point.nextDay)
+  return index > 0 ? index : undefined
 })
 
 function extreme(points: ChartPoint[], pick: 'max' | 'min'): ChartPoint | undefined {
@@ -152,7 +150,7 @@ const chart = computed(() => {
   const timeOf = (point: ChartPoint) => point.title.split(', ').at(-1) ?? ''
   return {
     points: dayPoints.value,
-    title: crossesMidnight.value ? t('chart.titleNext') : t('chart.title'),
+    title: t('chart.title'),
     subtitle: t('chart.subtitle'),
     summary:
       first && max && min
@@ -254,6 +252,8 @@ const errorText = computed(() => {
         :title="chart.title"
         :subtitle="chart.subtitle"
         :summary="chart.summary"
+        :boundary-index="view === 'day' ? boundaryIndex : undefined"
+        :boundary-label="t('chart.tomorrow')"
       />
     </div>
   </section>

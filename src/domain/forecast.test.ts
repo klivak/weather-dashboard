@@ -62,8 +62,8 @@ describe('localDateKey', () => {
 describe('todaySeries', () => {
   it('starts with the live reading and keeps the rest of the local day', () => {
     const series = todaySeries(current(MIDNIGHT + 8 * HOUR, 3.4), forecast)
-    expect(series[0]).toEqual({ dt: MIDNIGHT + 8 * HOUR, temp: 3.4, now: true })
-    // Points at 10, 13, 16, 19, 22 h local remain today; then it continues into tomorrow to reach 8 points.
+    expect(series[0]).toEqual({ dt: MIDNIGHT + 8 * HOUR, temp: 3.4, now: true, nextDay: false })
+    // Points at 10, 13, 16, 19, 22 h local remain today, which is enough: nothing from tomorrow.
     expect(series.map((p) => formatTime(p.dt, KYIV_TZ, 'en'))).toEqual([
       '08:00',
       '10:00',
@@ -71,15 +71,33 @@ describe('todaySeries', () => {
       '16:00',
       '19:00',
       '22:00',
-      '01:00',
-      '04:00',
     ])
+    expect(series.some((p) => p.nextDay)).toBe(false)
   })
 
   it('in the morning shows the whole local day even beyond the minimum', () => {
     const series = todaySeries(current(MIDNIGHT + 0.5 * HOUR), forecast)
     expect(series).toHaveLength(9)
     expect(series.slice(1).every((p) => localDateKey(p.dt, KYIV_TZ) === '2026-11-11')).toBe(true)
+  })
+
+  it('keeps a short afternoon series to today only', () => {
+    // 17:00: 19:00 and 22:00 remain, plus the live reading = 3 points < 4, so it borrows tomorrow.
+    const afternoon = todaySeries(current(MIDNIGHT + 14 * HOUR), forecast)
+    expect(afternoon.map((p) => formatTime(p.dt, KYIV_TZ, 'en'))).toEqual([
+      '14:00',
+      '16:00',
+      '19:00',
+      '22:00',
+    ])
+    expect(afternoon.some((p) => p.nextDay)).toBe(false)
+
+    const evening = todaySeries(current(MIDNIGHT + 17 * HOUR), forecast)
+    expect(evening).toHaveLength(8)
+    expect(evening.findIndex((p) => p.nextDay)).toBe(3)
+    expect(evening.slice(3).every((p) => p.nextDay && localDateKey(p.dt, KYIV_TZ) === '2026-11-12')).toBe(
+      true,
+    )
   })
 
   it('late at night continues into tomorrow', () => {

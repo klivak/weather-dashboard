@@ -13,6 +13,8 @@ export interface TempPoint {
   temp: number
   /** True for the live reading, false for forecast points. */
   now: boolean
+  /** The point belongs to the next local day (only late in the evening). */
+  nextDay: boolean
 }
 
 /** YYYY-MM-DD of a moment in a city whose offset from UTC is `timezone` seconds. */
@@ -21,17 +23,27 @@ export function localDateKey(dt: number, timezone: number): string {
 }
 
 /**
- * Temperatures for "today" in the city's own timezone: the live reading first, then the 3-hour forecast points left
- * in the local day. Late in the evening only one or two points remain, so the series continues into the next day
- * until it has at least `minPoints`, which keeps the chart meaningful at any hour.
+ * Temperatures for the current day in the city's own timezone: the live reading, then the 3-hour forecast points
+ * left in that local day. Late in the evening fewer than `minPoints` remain, so the series then continues into the
+ * next morning up to `extendTo` points; those points are flagged `nextDay` so the chart can mark the boundary.
  */
-export function todaySeries(current: CurrentWeather, forecast: Forecast, minPoints = 8): TempPoint[] {
+export function todaySeries(
+  current: CurrentWeather,
+  forecast: Forecast,
+  minPoints = 4,
+  extendTo = 8,
+): TempPoint[] {
   const today = localDateKey(current.dt, current.timezone)
   const upcoming = forecast.points.filter((point) => point.dt > current.dt)
-  const series: TempPoint[] = [{ dt: current.dt, temp: current.temp, now: true }]
+  const series: TempPoint[] = [{ dt: current.dt, temp: current.temp, now: true, nextDay: false }]
   for (const point of upcoming) {
-    if (localDateKey(point.dt, forecast.timezone) !== today && series.length >= minPoints) break
-    series.push({ dt: point.dt, temp: point.temp, now: false })
+    if (localDateKey(point.dt, forecast.timezone) !== today) break
+    series.push({ dt: point.dt, temp: point.temp, now: false, nextDay: false })
+  }
+  if (series.length >= minPoints) return series
+  for (const point of upcoming.slice(series.length - 1, upcoming.length)) {
+    if (series.length >= extendTo) break
+    series.push({ dt: point.dt, temp: point.temp, now: false, nextDay: true })
   }
   return series
 }
