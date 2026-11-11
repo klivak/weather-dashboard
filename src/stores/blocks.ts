@@ -71,6 +71,16 @@ export const useBlocksStore = defineStore('blocks', () => {
     return true
   }
 
+  /** Move a block one place up (-1) or down (+1); returns its new index, or -1 when it cannot move. */
+  function move(id: string, delta: -1 | 1): number {
+    const index = blocks.value.findIndex((block) => block.id === id)
+    const target = index + delta
+    if (index < 0 || target < 0 || target >= blocks.value.length) return -1
+    const [block] = blocks.value.splice(index, 1)
+    blocks.value.splice(target, 0, block!)
+    return target
+  }
+
   /** Undo a removal: put the block back at its old position (if there is still room). */
   function restore(block: WeatherBlockState, index: number): boolean {
     if (!canAdd.value || blocks.value.some((item) => item.id === block.id)) return false
@@ -97,5 +107,5 @@ export const useBlocksStore = defineStore('blocks', () => {
     deep: true,
   })
 
-  return { blocks, canAdd, canRemove, restored, add, remove, restore, setCity, setView }
+  return { blocks, canAdd, canRemove, restored, add, remove, restore, move, setCity, setView }
 })

@@ -4,6 +4,7 @@ import { resolveDefaultCity } from '@/api/location'
 import { cityName } from '@/api/models'
 import BaseButton from '@/components/base/BaseButton.vue'
 import ConfirmDialog from '@/components/base/ConfirmDialog.vue'
+import MenuButton from '@/components/base/MenuButton.vue'
 import FavouriteButton from '@/components/favourites/FavouriteButton.vue'
 import IconPlus from '@/components/icons/IconPlus.vue'
 import IconTrash from '@/components/icons/IconTrash.vue'
@@ -72,6 +73,25 @@ onMounted(async () => {
 
 onBeforeUnmount(() => locateController.abort())
 
+function menuItems(index: number) {
+  return [
+    { id: 'up', label: t('home.moveUp'), disabled: index === 0 },
+    { id: 'down', label: t('home.moveDown'), disabled: index === store.blocks.length - 1 },
+  ]
+}
+
+function onMenu(block: WeatherBlockState, action: string) {
+  const position = store.move(block.id, action === 'up' ? -1 : 1)
+  if (position < 0) return
+  void announce(
+    t('home.moved', {
+      city: nameOf(block) || t('home.blockLabel', { n: position + 1 }),
+      position: position + 1,
+      total: store.blocks.length,
+    }),
+  )
+}
+
 async function add() {
   const block = store.add()
   if (!block) return
@@ -123,6 +143,12 @@ async function confirmRemove() {
       >
         <template v-if="block.city || store.canRemove" #actions>
           <FavouriteButton v-if="block.city" :city="block.city" />
+          <MenuButton
+            v-if="store.blocks.length > 1"
+            :label="nameOf(block) ? t('home.menu', { city: nameOf(block) }) : t('home.menuEmpty')"
+            :items="menuItems(index)"
+            @select="onMenu(block, $event)"
+          />
           <BaseButton
             v-if="store.canRemove"
             icon-only
@@ -232,6 +258,11 @@ async function confirmRemove() {
   color: var(--text-muted);
   font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
+}
+
+/* Reordering slides the blocks into their new places. */
+.block-move {
+  transition: transform var(--dur-slow) var(--ease-out);
 }
 
 .block-enter-active,

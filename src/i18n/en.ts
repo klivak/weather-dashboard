@@ -115,6 +115,11 @@ export const en = {
   home: {
     heading: 'Your cities',
     blockLabel: 'City {n}',
+    menu: 'More actions for {city}',
+    menuEmpty: 'More actions for this block',
+    moveUp: 'Move up',
+    moveDown: 'Move down',
+    moved: '{city} moved to place {position} of {total}',
     popular: 'Popular cities',
     add: 'Add a city',
     count: '{count} of {max}',

@@ -130,6 +130,19 @@ describe('blocks store', () => {
     expect(useBlocksStore().blocks[0]?.view).toBeUndefined()
   })
 
+  it('moves blocks up and down within the list', () => {
+    const store = useBlocksStore()
+    store.add()
+    store.add()
+    const [a, b, c] = store.blocks.map((block) => block.id)
+    expect(store.move(c!, -1)).toBe(1)
+    expect(store.blocks.map((block) => block.id)).toEqual([a, c, b])
+    expect(store.move(a!, -1)).toBe(-1)
+    expect(store.move(b!, 1)).toBe(-1)
+    expect(store.move(a!, 1)).toBe(1)
+    expect(store.blocks.map((block) => block.id)).toEqual([c, a, b])
+  })
+
   it('falls back to one block when storage is unreadable', () => {
     localStorage.setItem(BLOCKS_KEY, '{"v":2}')
     expect(useBlocksStore().blocks).toHaveLength(1)

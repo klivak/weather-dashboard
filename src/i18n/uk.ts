@@ -119,6 +119,11 @@ export const uk: Messages = {
   home: {
     heading: 'Ваші міста',
     blockLabel: 'Місто {n}',
+    menu: 'Інші дії: {city}',
+    menuEmpty: 'Інші дії з цим блоком',
+    moveUp: 'Перемістити вище',
+    moveDown: 'Перемістити нижче',
+    moved: '{city}: тепер {position} з {total}',
     popular: 'Популярні міста',
     add: 'Додати місто',
     count: '{count} з {max}',

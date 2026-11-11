@@ -205,3 +205,29 @@ describe('HomeView undo', () => {
     expect(useAnnouncer().message.value).toBe('Lviv is back')
   })
 })
+
+describe('HomeView reorder', () => {
+  it('moves a block down from its menu and announces the new place', async () => {
+    const home = mountHome()
+    await flushPromises()
+    const store = useBlocksStore()
+    store.add()
+    await store.setCity(store.blocks[1]!.id, lviv)
+    await nextTick()
+
+    await home.find('[aria-label="More actions for Kyiv"]').trigger('click')
+    await nextTick()
+    const items = home.findAll('[role="menuitem"]')
+    expect(items.map((item) => item.text())).toEqual(['Move up', 'Move down', 'Move up', 'Move down'])
+    await items[1]?.trigger('click')
+    await flushPromises()
+    expect(store.blocks.map((block) => block.city?.name)).toEqual(['Lviv', 'Kyiv'])
+    expect(useAnnouncer().message.value).toBe('Kyiv moved to place 2 of 2')
+  })
+
+  it('has no menu when there is only one block', async () => {
+    const home = mountHome()
+    await flushPromises()
+    expect(home.find('[aria-haspopup="menu"]').exists()).toBe(false)
+  })
+})
