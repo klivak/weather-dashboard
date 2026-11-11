@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watchEffect } from 'vue'
-import { completeCityNames } from '@/api/cities'
-import { KYIV } from '@/api/ipLocation'
-import type { City } from '@/api/models'
+import { computed, watchEffect } from 'vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import TabBar from '@/components/base/TabBar.vue'
@@ -10,22 +7,15 @@ import IconHome from '@/components/icons/IconHome.vue'
 import IconStar from '@/components/icons/IconStar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
-import WeatherBlock from '@/components/weather/WeatherBlock.vue'
 import { useHashTab, type TabId } from '@/composables/useHashTab'
 import { MAX_FAVOURITES } from '@/domain/limits'
 import { useI18n } from '@/i18n'
 import { useSettingsStore } from '@/stores/settings'
+import HomeView from '@/views/HomeView.vue'
 
 const { t, locale } = useI18n()
 const settings = useSettingsStore()
 const tab = useHashTab()
-const city = ref<City | null>(KYIV)
-
-async function onSelect(next: City) {
-  city.value = next
-  const complete = await completeCityNames(next)
-  if (city.value?.id === next.id) city.value = complete
-}
 
 const tabs = computed(() => [
   { id: 'home' as TabId, label: t('nav.home') },
@@ -62,7 +52,7 @@ watchEffect(() => {
         tabindex="0"
       >
         <h2 class="visually-hidden">{{ t('home.heading') }}</h2>
-        <WeatherBlock :city="city" @update:city="onSelect" />
+        <HomeView />
       </section>
 
       <section

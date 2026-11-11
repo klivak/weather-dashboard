@@ -1,0 +1,205 @@
+<script setup lang="ts">
+import { computed, nextTick, onMounted, ref } from 'vue'
+import { KYIV } from '@/api/ipLocation'
+import { cityName } from '@/api/models'
+import BaseButton from '@/components/base/BaseButton.vue'
+import ConfirmDialog from '@/components/base/ConfirmDialog.vue'
+import IconPlus from '@/components/icons/IconPlus.vue'
+import IconTrash from '@/components/icons/IconTrash.vue'
+import WeatherBlock from '@/components/weather/WeatherBlock.vue'
+import { MAX_BLOCKS } from '@/domain/limits'
+import { useI18n } from '@/i18n'
+import { useBlocksStore, type WeatherBlockState } from '@/stores/blocks'
+
+const { t, locale } = useI18n()
+const store = useBlocksStore()
+
+/** The block that was just added gets its search focused. */
+const focusId = ref<string | null>(null)
+const pendingRemoval = ref<WeatherBlockState | null>(null)
+const announcement = ref('')
+const list = ref<{ $el: HTMLElement } | null>(null)
+const addButton = ref<HTMLButtonElement | null>(null)
+
+const confirmOpen = computed({
+  get: () => pendingRemoval.value !== null,
+  set: (open) => {
+    if (!open) pendingRemoval.value = null
+  },
+})
+
+const pendingName = computed(() =>
+  pendingRemoval.value?.city ? cityName(pendingRemoval.value.city, locale.value) : '',
+)
+
+function nameOf(block: WeatherBlockState): string {
+  return block.city ? cityName(block.city, locale.value) : ''
+}
+
+onMounted(() => {
+  // First visit: show a city right away instead of an empty block. Step 8 replaces this with the visitor's city.
+  const first = store.blocks[0]
+  if (!store.restored && first && !first.city) void store.setCity(first.id, KYIV)
+})
+
+async function add() {
+  const block = store.add()
+  if (!block) return
+  focusId.value = block.id
+  await nextTick()
+  list.value?.$el.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+}
+
+async function confirmRemove() {
+  const block = pendingRemoval.value
+  if (!block) return
+  const name = nameOf(block)
+  store.remove(block.id)
+  announcement.value = name ? t('home.removed', { city: name }) : ''
+  await nextTick()
+  // The removed block's button is gone, so give focus a sensible place to land.
+  addButton.value?.focus()
+}
+</script>
+
+<template>
+  <div class="home">
+    <TransitionGroup ref="list" name="block" tag="div" class="home__list">
+      <WeatherBlock
+        v-for="(block, index) in store.blocks"
+        :key="block.id"
+        :city="block.city"
+        :label="t('home.blockLabel', { n: index + 1 })"
+        :autofocus="block.id === focusId"
+        @update:city="store.setCity(block.id, $event)"
+      >
+        <template v-if="store.canRemove" #actions>
+          <BaseButton
+            icon-only
+            :aria-label="nameOf(block) ? t('home.remove', { city: nameOf(block) }) : t('home.removeEmpty')"
+            :title="nameOf(block) ? t('home.remove', { city: nameOf(block) }) : t('home.removeEmpty')"
+            @click="pendingRemoval = block"
+          >
+            <IconTrash />
+          </BaseButton>
+        </template>
+      </WeatherBlock>
+    </TransitionGroup>
+
+    <div class="home__add">
+      <button ref="addButton" type="button" class="add" :disabled="!store.canAdd" @click="add">
+        <span class="add__icon" aria-hidden="true"><IconPlus /></span>
+        <span class="add__text">
+          <span class="add__label">{{
+            store.canAdd ? t('home.add') : t('home.limit', { max: MAX_BLOCKS })
+          }}</span>
+          <span class="add__count">{{
+            t('home.count', { count: store.blocks.length, max: MAX_BLOCKS })
+          }}</span>
+        </span>
+      </button>
+    </div>
+
+    <p class="home__status visually-hidden" role="status">{{ announcement }}</p>
+
+    <ConfirmDialog
+      v-model:open="confirmOpen"
+      :title="pendingName ? t('home.confirmTitle', { city: pendingName }) : t('home.confirmTitleEmpty')"
+      :description="pendingName ? t('home.confirmText') : t('home.confirmTextEmpty')"
+      :confirm-label="t('home.confirmAction')"
+      :cancel-label="t('home.cancel')"
+      @confirm="confirmRemove"
+    />
+  </div>
+</template>
+
+<style scoped>
+.home {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.home__list {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 72px;
+  padding: var(--space-4);
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  color: var(--text);
+  text-align: left;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+.add:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.add:disabled {
+  cursor: default;
+  color: var(--text-muted);
+}
+
+.add__icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-text);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+.add:hover:not(:disabled) .add__icon {
+  transform: rotate(90deg);
+}
+
+.add:disabled .add__icon {
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+
+.add__text {
+  display: grid;
+}
+
+.add__label {
+  font-weight: var(--weight-medium);
+}
+
+.add__count {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.block-enter-active,
+.block-leave-active {
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+.block-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.block-leave-to {
+  opacity: 0;
+  transform: scale(0.98);
+}
+</style>
