@@ -11,6 +11,7 @@ import IconPlus from '@/components/icons/IconPlus.vue'
 import IconTrash from '@/components/icons/IconTrash.vue'
 import WeatherBlock from '@/components/weather/WeatherBlock.vue'
 import { useAnnouncer } from '@/composables/useAnnouncer'
+import { flashBlock, useBlockTransitions } from '@/composables/useBlockTransitions'
 import { useToasts } from '@/composables/useToasts'
 import { MAX_BLOCKS } from '@/domain/limits'
 import { suggestCities } from '@/domain/popularCities'
@@ -23,6 +24,7 @@ const store = useBlocksStore()
 const favourites = useFavouritesStore()
 const { announce } = useAnnouncer()
 const { show: showToast } = useToasts()
+const { onEnter, onLeave } = useBlockTransitions()
 
 /** The block that was just added gets its search focused. */
 const focusId = ref<string | null>(null)
@@ -92,6 +94,8 @@ function menuItems(index: number) {
 function onMenu(block: WeatherBlockState, action: string) {
   const position = store.move(block.id, action === 'up' ? -1 : 1)
   if (position < 0) return
+  // After the slide, show where it landed.
+  window.setTimeout(() => flashBlock(`block-${block.id}`), 320)
   void announce(
     t('home.moved', {
       city: nameOf(block) || t('home.blockLabel', { n: position + 1 }),
@@ -121,8 +125,9 @@ async function confirmRemove() {
       label: t('toast.undo'),
       run: () => {
         if (!store.restore(block, index)) return
-        // The restored block mounts with focus in its search field.
-        focusId.value = block.id
+        // Focus the restored block itself and ring it briefly once it has expanded.
+        void nextTick(() => document.getElementById(`block-${block.id}`)?.focus({ preventScroll: true }))
+        window.setTimeout(() => flashBlock(`block-${block.id}`), 380)
         void announce(name ? t('home.restored', { city: name }) : t('home.restoredEmpty'))
       },
     },
@@ -137,7 +142,7 @@ async function confirmRemove() {
   <div class="home">
     <CityJumpBar v-if="jumpTargets.length" :targets="jumpTargets" />
 
-    <TransitionGroup ref="list" name="block" tag="div" class="home__list">
+    <TransitionGroup ref="list" name="block" tag="div" class="home__list" @enter="onEnter" @leave="onLeave">
       <WeatherBlock
         v-for="(block, index) in store.blocks"
         :id="`block-${block.id}`"
@@ -276,22 +281,5 @@ async function confirmRemove() {
 /* Reordering slides the blocks into their new places. */
 .block-move {
   transition: transform var(--dur-slow) var(--ease-out);
-}
-
-.block-enter-active,
-.block-leave-active {
-  transition:
-    opacity var(--dur-base) var(--ease-out),
-    transform var(--dur-base) var(--ease-out);
-}
-
-.block-enter-from {
-  opacity: 0;
-  transform: translateY(12px);
-}
-
-.block-leave-to {
-  opacity: 0;
-  transform: scale(0.98);
 }
 </style>

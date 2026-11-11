@@ -203,6 +203,7 @@ describe('HomeView undo', () => {
     await flushPromises()
     expect(store.blocks.map((block) => block.id)).toEqual(ids)
     expect(useAnnouncer().message.value).toBe('Lviv is back')
+    expect(document.activeElement?.id).toBe(`block-${ids[1]}`)
   })
 })
 

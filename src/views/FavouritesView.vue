@@ -5,6 +5,7 @@ import FavouriteButton from '@/components/favourites/FavouriteButton.vue'
 import IconStar from '@/components/icons/IconStar.vue'
 import WeatherBlock from '@/components/weather/WeatherBlock.vue'
 import { MAX_FAVOURITES } from '@/domain/limits'
+import { useBlockTransitions } from '@/composables/useBlockTransitions'
 import { useI18n } from '@/i18n'
 import { useFavouritesStore } from '@/stores/favourites'
 
@@ -12,6 +13,7 @@ const emit = defineEmits<{ browse: [] }>()
 
 const { t } = useI18n()
 const favourites = useFavouritesStore()
+const { onEnter, onLeave } = useBlockTransitions()
 </script>
 
 <template>
@@ -27,7 +29,7 @@ const favourites = useFavouritesStore()
       </template>
     </EmptyState>
 
-    <TransitionGroup v-else name="block" tag="div" class="favourites__list">
+    <TransitionGroup v-else name="block" tag="div" class="favourites__list" @enter="onEnter" @leave="onLeave">
       <!-- Fixed to their city: no search, only the favourite toggle and the view switch. -->
       <WeatherBlock
         v-for="city in favourites.cities"
@@ -50,20 +52,8 @@ const favourites = useFavouritesStore()
   gap: var(--space-5);
 }
 
-.block-enter-active,
-.block-leave-active {
-  transition:
-    opacity var(--dur-base) var(--ease-out),
-    transform var(--dur-base) var(--ease-out);
-}
-
-.block-enter-from {
-  opacity: 0;
-  transform: translateY(12px);
-}
-
-.block-leave-to {
-  opacity: 0;
-  transform: scale(0.98);
+/* Blocks around a removed or restored favourite slide into place. */
+.block-move {
+  transition: transform var(--dur-slow) var(--ease-out);
 }
 </style>

@@ -352,6 +352,25 @@ const errorText = computed(() => {
   outline: none;
 }
 
+/* Short accent ring after a move or an undo (added by flashBlock). */
+.block--flash {
+  animation: block-flash 1.1s var(--ease-out);
+}
+
+@keyframes block-flash {
+  0%,
+  35% {
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, var(--accent) 70%, transparent),
+      var(--shadow-2);
+  }
+  100% {
+    box-shadow:
+      0 0 0 0 transparent,
+      var(--shadow-1);
+  }
+}
+
 .block--favourite {
   border-color: color-mix(in srgb, var(--fav) 70%, transparent);
   box-shadow:
