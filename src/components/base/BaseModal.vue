@@ -15,16 +15,47 @@ const dialog = useTemplateRef<HTMLDialogElement>('dialog')
 const titleId = useId()
 const descriptionId = useId()
 
+const CLOSE_MS = 180
+let closeTimer: ReturnType<typeof setTimeout> | undefined
+
+function reducedMotion(): boolean {
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+}
+
+/** Fade the panel and scrim out, then close the native dialog (which returns focus to the trigger). */
+function closeAnimated(element: HTMLDialogElement) {
+  if (reducedMotion()) return element.close()
+  element.classList.add('modal--closing')
+  clearTimeout(closeTimer)
+  closeTimer = setTimeout(() => {
+    element.classList.remove('modal--closing')
+    if (element.open) element.close()
+  }, CLOSE_MS)
+}
+
 function sync(value: boolean) {
   const element = dialog.value
   if (!element) return
-  if (value && !element.open) element.showModal()
-  if (!value && element.open) element.close()
+  if (value && !element.open) {
+    clearTimeout(closeTimer)
+    element.classList.remove('modal--closing')
+    element.showModal()
+  }
+  if (!value && element.open) closeAnimated(element)
 }
 
 watch(open, sync)
 onMounted(() => sync(open.value))
-onBeforeUnmount(() => dialog.value?.open && dialog.value.close())
+onBeforeUnmount(() => {
+  clearTimeout(closeTimer)
+  if (dialog.value?.open) dialog.value.close()
+})
+
+/** Esc: animate out instead of the browser's instant close. */
+function onCancel(event: Event) {
+  event.preventDefault()
+  open.value = false
+}
 
 function onClose() {
   open.value = false
@@ -43,6 +74,7 @@ function onClick(event: MouseEvent) {
       class="modal"
       :aria-labelledby="titleId"
       :aria-describedby="description ? descriptionId : undefined"
+      @cancel="onCancel"
       @close="onClose"
       @click="onClick"
     >
@@ -76,6 +108,27 @@ function onClick(event: MouseEvent) {
 .modal::backdrop {
   background: var(--scrim);
   animation: scrim-in var(--dur-base) var(--ease-out);
+}
+
+.modal.modal--closing {
+  animation: modal-out 180ms var(--ease-out) forwards;
+}
+
+.modal.modal--closing::backdrop {
+  animation: scrim-out 180ms var(--ease-out) forwards;
+}
+
+@keyframes modal-out {
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+@keyframes scrim-out {
+  to {
+    opacity: 0;
+  }
 }
 
 @keyframes modal-in {

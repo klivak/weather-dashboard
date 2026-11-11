@@ -1,5 +1,5 @@
 import { mount, type VueWrapper } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import ConfirmDialog from './ConfirmDialog.vue'
 
@@ -77,5 +77,31 @@ describe('ConfirmDialog', () => {
     await nextTick()
     expect(openValue).toBe(false)
     expect(app.emitted('confirm')).toBeUndefined()
+  })
+})
+
+describe('ConfirmDialog motion', () => {
+  it('fades out before the native dialog closes, also on Escape', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    mountDialog()
+    dialog().querySelector('button')?.click()
+    await nextTick()
+    expect(openValue).toBe(false)
+    expect(dialog().open).toBe(true)
+    expect(dialog().classList.contains('modal--closing')).toBe(true)
+    vi.advanceTimersByTime(200)
+    expect(dialog().open).toBe(false)
+
+    await wrapper!.setProps({ open: true })
+    const cancel = new Event('cancel', { cancelable: true })
+    dialog().dispatchEvent(cancel)
+    await nextTick()
+    expect(cancel.defaultPrevented).toBe(true)
+    vi.advanceTimersByTime(200)
+    expect(dialog().open).toBe(false)
+
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
   })
 })

@@ -12,3 +12,19 @@ if (typeof HTMLDialogElement !== 'undefined') {
 
 // jsdom has no layout, so scrolling is a no-op.
 Element.prototype.scrollIntoView ??= function () {}
+
+// Component tests run as if the user prefers reduced motion, so timing never decides an assertion.
+// Tests that check an animation stub matchMedia themselves.
+if (typeof window !== 'undefined' && !window.matchMedia) {
+  window.matchMedia = (query: string) =>
+    ({
+      matches: query.includes('prefers-reduced-motion'),
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }) as MediaQueryList
+}

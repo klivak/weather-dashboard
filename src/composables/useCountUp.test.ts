@@ -29,6 +29,7 @@ afterEach(() => {
 
 describe('useCountUp', () => {
   it('eases from 0 to the value, then between later values', async () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
     const source = ref(10)
     const value = effectScope().run(() => useCountUp(() => source.value, 100))!
     expect(value.value).toBe(0)
