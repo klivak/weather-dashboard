@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, watch } from 'vue'
 import type { City } from '@/api/models'
 import { cityName } from '@/api/models'
 import BaseButton from '@/components/base/BaseButton.vue'
@@ -8,6 +8,7 @@ import CitySearch from '@/components/search/CitySearch.vue'
 import { useWeather } from '@/composables/useWeather'
 import { dailySummaries, localDateKey, todaySeries } from '@/domain/forecast'
 import { useI18n } from '@/i18n'
+import { useThemeStore } from '@/stores/theme'
 import { formatDayDate, formatShortWeekday, formatTemp, formatTime } from '@/utils/format'
 import TempChart, { type ChartPoint } from './TempChart.vue'
 import WeatherCard from './WeatherCard.vue'
@@ -28,8 +29,17 @@ const props = withDefaults(
     favourite?: boolean
     /** The default city is still being detected: show the skeleton instead of the "pick a city" hint. */
     locating?: boolean
+    /** This block's city drives the automatic day/night look (the first home block). */
+    reportSun?: boolean
   }>(),
-  { searchable: true, label: undefined, autofocus: false, favourite: false, locating: false },
+  {
+    searchable: true,
+    label: undefined,
+    autofocus: false,
+    favourite: false,
+    locating: false,
+    reportSun: false,
+  },
 )
 
 const emit = defineEmits<{ 'update:city': [city: City] }>()
@@ -43,6 +53,21 @@ const { current, forecast, status, errorKind, reload } = useWeather(
   () => props.city,
   () => locale.value,
 )
+
+const themeStore = useThemeStore()
+watch(
+  [current, () => props.reportSun],
+  ([weather, report]) => {
+    if (!report) return
+    themeStore.setSun(
+      weather ? { sunrise: weather.sunrise, sunset: weather.sunset, timezone: weather.timezone } : null,
+    )
+  },
+  { immediate: true },
+)
+onBeforeUnmount(() => {
+  if (props.reportSun) themeStore.setSun(null)
+})
 
 const viewOptions = computed(() => [
   { value: 'day' as const, label: t('view.day') },

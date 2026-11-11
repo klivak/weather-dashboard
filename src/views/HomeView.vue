@@ -95,6 +95,7 @@ async function confirmRemove() {
         :label="t('home.blockLabel', { n: index + 1 })"
         :autofocus="block.id === focusId"
         :locating="block.id === locatingId"
+        :report-sun="index === 0"
         :favourite="favourites.isFavourite(block.city?.id)"
         @update:city="store.setCity(block.id, $event)"
       >

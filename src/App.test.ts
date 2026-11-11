@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import App from './App.vue'
+import { useThemeStore } from './stores/theme'
 
 // The shell tests do not need weather; keep requests pending so no network is touched.
 vi.mock('@/api/owm', () => ({
@@ -72,7 +73,7 @@ describe('App shell', () => {
 
   it('switches the interface language', async () => {
     const app = mountApp()
-    const radios = app.findAll('[role="radio"]')
+    const radios = app.find('[aria-label="Language"]').findAll('[role="radio"]')
     expect(radios.map((radio) => radio.attributes('aria-label'))).toEqual(['English', 'Українська'])
 
     await radios[1]?.trigger('click')
@@ -80,5 +81,40 @@ describe('App shell', () => {
     expect(app.findAll('[role="tab"]').map((tab) => tab.text())).toEqual(['Головна', 'Вибране'])
     expect(document.documentElement.lang).toBe('uk')
     expect(app.find('#panel-favourites').text()).toContain('до 5 міст')
+  })
+})
+
+describe('day and night look', () => {
+  it('switches the page look from the header and remembers it', async () => {
+    const app = mountApp()
+    const group = app.find('[aria-label="Day or night look"]')
+    const radios = group.findAll('[role="radio"]')
+    expect(radios.map((radio) => radio.attributes('aria-label'))).toEqual([
+      'Auto: follows the sun in your first city',
+      'Day',
+      'Night',
+    ])
+
+    await radios[2]?.trigger('click')
+    expect(document.documentElement.dataset.theme).toBe('night')
+    expect(JSON.parse(localStorage.getItem('wd:settings')!).theme).toBe('night')
+
+    await radios[1]?.trigger('click')
+    expect(document.documentElement.dataset.theme).toBe('day')
+  })
+
+  it('in auto mode follows the sun reported for the first city', async () => {
+    localStorage.setItem('wd:settings', JSON.stringify({ v: 1, locale: 'en', theme: 'auto' }))
+    mountApp()
+    const theme = useThemeStore()
+    const noonUtc = Date.UTC(2026, 10, 11, 12) / 1000
+    theme.setSun({ sunrise: noonUtc - 5 * 3600, sunset: noonUtc + 4 * 3600, timezone: 0 })
+    theme.tick(noonUtc * 1000)
+    await nextTick()
+    expect(document.documentElement.dataset.theme).toBe('day')
+
+    theme.tick((noonUtc + 6 * 3600) * 1000)
+    await nextTick()
+    expect(document.documentElement.dataset.theme).toBe('night')
   })
 })

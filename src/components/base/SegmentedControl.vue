@@ -19,6 +19,8 @@ const props = withDefaults(
 
 const model = defineModel<T>({ required: true })
 
+defineSlots<{ option?: (props: { option: SegmentOption<T> }) => unknown }>()
+
 const buttons = useTemplateRef<HTMLButtonElement[]>('buttons')
 
 const activeIndex = computed(() =>
@@ -79,7 +81,7 @@ function onKeydown(event: KeyboardEvent, index: number) {
       @click="select(index)"
       @keydown="onKeydown($event, index)"
     >
-      {{ option.label }}
+      <slot name="option" :option="option">{{ option.label }}</slot>
     </button>
   </div>
 </template>

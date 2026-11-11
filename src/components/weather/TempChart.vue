@@ -14,7 +14,7 @@ import {
 } from 'chart.js'
 import { computed, nextTick, onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
 import { useI18n } from '@/i18n'
-import { useSettingsStore } from '@/stores/settings'
+import { useThemeStore } from '@/stores/theme'
 import { formatTemp } from '@/utils/format'
 
 export interface ChartPoint {
@@ -41,7 +41,7 @@ const props = defineProps<{
 Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip)
 
 const { t } = useI18n()
-const settings = useSettingsStore()
+const themeStore = useThemeStore()
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
 let chart: Chart<'line', number[], string> | undefined
 
@@ -194,7 +194,7 @@ onBeforeUnmount(() => chart?.destroy())
 // New data or labels: rebuild on the same canvas. Theme: colours come from CSS, so rebuild after the DOM updates.
 watch(() => props.points, render, { deep: true })
 watch(
-  () => settings.theme,
+  () => themeStore.theme,
   () => nextTick(render),
 )
 </script>

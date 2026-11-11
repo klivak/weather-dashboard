@@ -14,6 +14,12 @@ export const uk: Messages = {
   settings: {
     language: 'Мова',
   },
+  theme: {
+    label: 'Денний або нічний вигляд',
+    auto: 'Авто: за сонцем у першому місті',
+    day: 'День',
+    night: 'Ніч',
+  },
   locales: {
     en: 'English',
     uk: 'Українська',

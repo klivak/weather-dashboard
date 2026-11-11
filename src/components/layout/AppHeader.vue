@@ -2,8 +2,11 @@
 import { computed } from 'vue'
 import type { Locale } from '@/api/models'
 import SegmentedControl from '@/components/base/SegmentedControl.vue'
+import IconAuto from '@/components/icons/IconAuto.vue'
+import IconMoon from '@/components/icons/IconMoon.vue'
+import IconSun from '@/components/icons/IconSun.vue'
 import { useI18n } from '@/i18n'
-import { useSettingsStore } from '@/stores/settings'
+import { useSettingsStore, type ThemeMode } from '@/stores/settings'
 import AppLogo from './AppLogo.vue'
 
 const { t } = useI18n()
@@ -14,10 +17,23 @@ const locale = computed<Locale>({
   set: (value) => settings.setLocale(value),
 })
 
+const themeMode = computed<ThemeMode>({
+  get: () => settings.themeMode,
+  set: (value) => settings.setThemeMode(value),
+})
+
 const localeOptions = computed(() => [
   { value: 'en' as const, label: 'EN', ariaLabel: t('locales.en') },
   { value: 'uk' as const, label: 'UA', ariaLabel: t('locales.uk') },
 ])
+
+const themeOptions = computed(() => [
+  { value: 'auto' as const, label: t('theme.auto'), ariaLabel: t('theme.auto') },
+  { value: 'day' as const, label: t('theme.day'), ariaLabel: t('theme.day') },
+  { value: 'night' as const, label: t('theme.night'), ariaLabel: t('theme.night') },
+])
+
+const themeIcons = { auto: IconAuto, day: IconSun, night: IconMoon }
 </script>
 
 <template>
@@ -28,6 +44,11 @@ const localeOptions = computed(() => [
         <h1 class="header__title">{{ t('app.title') }}</h1>
       </a>
       <div class="header__controls">
+        <SegmentedControl v-model="themeMode" :options="themeOptions" :label="t('theme.label')" size="sm">
+          <template #option="{ option }">
+            <component :is="themeIcons[option.value]" class="header__theme-icon" :title="option.label" />
+          </template>
+        </SegmentedControl>
         <SegmentedControl
           v-model="locale"
           :options="localeOptions"
@@ -44,7 +65,7 @@ const localeOptions = computed(() => [
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
+  gap: var(--space-3);
   padding-block: var(--space-5);
 }
 
@@ -69,9 +90,20 @@ const localeOptions = computed(() => [
   gap: var(--space-2);
 }
 
-@media (max-width: 389px) {
+.header__theme-icon {
+  display: block;
+}
+
+/* Two compact switches leave no room for the wordmark on the narrowest phones; the logo stays, the heading
+   remains for screen readers. */
+@media (max-width: 459px) {
   .header__title {
-    font-size: var(--text-md);
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 }
 </style>

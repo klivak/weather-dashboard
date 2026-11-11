@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue'
+import { computed, onBeforeUnmount, onMounted, watch, watchEffect } from 'vue'
 import TabBar from '@/components/base/TabBar.vue'
 import IconHome from '@/components/icons/IconHome.vue'
 import IconStar from '@/components/icons/IconStar.vue'
@@ -10,12 +10,12 @@ import AppHeader from '@/components/layout/AppHeader.vue'
 import { useHashTab, type TabId } from '@/composables/useHashTab'
 import { useI18n } from '@/i18n'
 import { useFavouritesStore } from '@/stores/favourites'
-import { useSettingsStore } from '@/stores/settings'
+import { useThemeStore } from '@/stores/theme'
 import FavouritesView from '@/views/FavouritesView.vue'
 import HomeView from '@/views/HomeView.vue'
 
 const { t, locale } = useI18n()
-const settings = useSettingsStore()
+const themeStore = useThemeStore()
 const favourites = useFavouritesStore()
 const tab = useHashTab()
 
@@ -24,10 +24,35 @@ const tabs = computed(() => [
   { id: 'favourites' as TabId, label: t('nav.favourites'), badge: favourites.cities.length },
 ])
 
+/** Apply the look; a View Transition crossfades the sky where supported (never under reduced motion). */
+function applyTheme(theme: string) {
+  const root = document.documentElement
+  const apply = () => {
+    root.dataset.theme = theme
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', theme === 'night' ? '#070c1f' : '#bfdcfa')
+  }
+  const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  if (root.dataset.theme && root.dataset.theme !== theme && !reduced && document.startViewTransition) {
+    document.startViewTransition(apply)
+  } else {
+    apply()
+  }
+}
+
+watch(() => themeStore.theme, applyTheme, { immediate: true })
+
+// Re-check once a minute so "auto" turns to night at sunset without a reload.
+let clock: ReturnType<typeof setInterval> | undefined
+onMounted(() => {
+  clock = setInterval(() => themeStore.tick(), 60_000)
+})
+onBeforeUnmount(() => clearInterval(clock))
+
 watchEffect(() => {
   const root = document.documentElement
   root.lang = locale.value
-  root.dataset.theme = settings.theme
   document.title = t('app.title')
   document.querySelector('meta[name="description"]')?.setAttribute('content', t('app.description'))
 })

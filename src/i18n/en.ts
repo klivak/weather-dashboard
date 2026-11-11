@@ -11,6 +11,12 @@ export const en = {
   settings: {
     language: 'Language',
   },
+  theme: {
+    label: 'Day or night look',
+    auto: 'Auto: follows the sun in your first city',
+    day: 'Day',
+    night: 'Night',
+  },
   locales: {
     en: 'English',
     uk: 'Українська',
