@@ -3,12 +3,17 @@ import { computed } from 'vue'
 import type { City } from '@/api/models'
 import { cityName } from '@/api/models'
 import BaseButton from '@/components/base/BaseButton.vue'
+import SegmentedControl from '@/components/base/SegmentedControl.vue'
 import CitySearch from '@/components/search/CitySearch.vue'
 import { useWeather } from '@/composables/useWeather'
-import { localDateKey, todaySeries } from '@/domain/forecast'
+import { dailySummaries, localDateKey, todaySeries } from '@/domain/forecast'
 import { useI18n } from '@/i18n'
-import TempChart from './TempChart.vue'
+import { formatDayDate, formatShortWeekday, formatTemp, formatTime } from '@/utils/format'
+import TempChart, { type ChartPoint } from './TempChart.vue'
 import WeatherCard from './WeatherCard.vue'
+import WeekCard from './WeekCard.vue'
+
+export type ForecastView = 'day' | 'week'
 
 const props = withDefaults(
   defineProps<{
@@ -27,6 +32,8 @@ const props = withDefaults(
 
 const emit = defineEmits<{ 'update:city': [city: City] }>()
 
+const view = defineModel<ForecastView>('view', { default: 'day' })
+
 defineSlots<{ actions?: () => unknown }>()
 
 const { t, locale } = useI18n()
@@ -35,17 +42,102 @@ const { current, forecast, status, errorKind, reload } = useWeather(
   () => locale.value,
 )
 
+const viewOptions = computed(() => [
+  { value: 'day' as const, label: t('view.day') },
+  { value: 'week' as const, label: t('view.week') },
+])
+
+const name = computed(() => (props.city ? cityName(props.city, locale.value) : ''))
+const timezone = computed(() => forecast.value?.timezone ?? current.value?.timezone ?? 0)
+const today = computed(() => (current.value ? localDateKey(current.value.dt, current.value.timezone) : ''))
+
 const series = computed(() =>
   current.value && forecast.value ? todaySeries(current.value, forecast.value) : [],
 )
-/** Late in the day the series runs into tomorrow; the title then says so instead of "today". */
-const chartTitle = computed(() => {
+const days = computed(() => (forecast.value ? dailySummaries(forecast.value) : []))
+
+const dayPoints = computed<ChartPoint[]>(() =>
+  series.value.map((point) => {
+    const time = formatTime(point.dt, timezone.value, locale.value)
+    return {
+      label: point.now ? t('chart.now') : time,
+      title: `${formatDayDate(point.dt, timezone.value, locale.value)}, ${time}`,
+      value: point.temp,
+      highlight: point.now,
+    }
+  }),
+)
+
+const weekPoints = computed<ChartPoint[]>(() =>
+  days.value.map((day) => ({
+    label:
+      day.date === today.value ? t('week.today') : formatShortWeekday(day.dt, timezone.value, locale.value),
+    title: formatDayDate(day.dt, timezone.value, locale.value),
+    value: day.avg,
+    min: day.min,
+    max: day.max,
+    highlight: day.date === today.value,
+  })),
+)
+
+/** Late in the day the hourly series runs into tomorrow; the title then says so instead of "today". */
+const crossesMidnight = computed(() => {
   const first = series.value[0]
-  const tz = forecast.value?.timezone ?? 0
-  const crosses = !!first && series.value.some((p) => localDateKey(p.dt, tz) !== localDateKey(first.dt, tz))
-  return crosses ? t('chart.titleNext') : t('chart.title')
+  if (!first) return false
+  const firstDate = localDateKey(first.dt, timezone.value)
+  return series.value.some((point) => localDateKey(point.dt, timezone.value) !== firstDate)
 })
-const name = computed(() => (props.city ? cityName(props.city, locale.value) : ''))
+
+function extreme(points: ChartPoint[], pick: 'max' | 'min'): ChartPoint | undefined {
+  let best: ChartPoint | undefined
+  for (const point of points) {
+    if (!best || (pick === 'max' ? point.value > best.value : point.value < best.value)) best = point
+  }
+  return best
+}
+
+const chart = computed(() => {
+  if (view.value === 'week') {
+    const warm = extreme(weekPoints.value, 'max')
+    const cold = extreme(weekPoints.value, 'min')
+    return {
+      points: weekPoints.value,
+      title: t('chart.weekTitle'),
+      subtitle: t('chart.weekSubtitle'),
+      summary:
+        warm && cold
+          ? t('chart.weekSummary', {
+              city: name.value,
+              warm: warm.title,
+              warmTemp: formatTemp(warm.value),
+              cold: cold.title,
+              coldTemp: formatTemp(cold.value),
+            })
+          : '',
+    }
+  }
+  const first = series.value[0]
+  const max = extreme(dayPoints.value, 'max')
+  const min = extreme(dayPoints.value, 'min')
+  const timeOf = (point: ChartPoint) => point.title.split(', ').at(-1) ?? ''
+  return {
+    points: dayPoints.value,
+    title: crossesMidnight.value ? t('chart.titleNext') : t('chart.title'),
+    subtitle: t('chart.subtitle'),
+    summary:
+      first && max && min
+        ? t('chart.summary', {
+            city: name.value,
+            now: formatTemp(first.temp),
+            max: formatTemp(max.value),
+            maxTime: timeOf(max),
+            min: formatTemp(min.value),
+            minTime: timeOf(min),
+          })
+        : '',
+  }
+})
+
 const showSkeleton = computed(() => status.value === 'loading' && !current.value)
 
 const errorText = computed(() => {
@@ -70,11 +162,20 @@ const errorText = computed(() => {
     :aria-busy="status === 'loading'"
     :aria-label="name || label"
   >
-    <div v-if="searchable || $slots.actions" class="block__toolbar">
+    <div class="block__toolbar">
       <div v-if="searchable" class="block__search">
         <CitySearch :city="city" :autofocus="autofocus" @select="emit('update:city', $event)" />
       </div>
-      <div v-if="$slots.actions" class="block__actions"><slot name="actions" /></div>
+      <div v-if="city || $slots.actions" class="block__controls">
+        <SegmentedControl
+          v-if="city"
+          v-model="view"
+          :options="viewOptions"
+          :label="t('view.label')"
+          size="sm"
+        />
+        <div v-if="$slots.actions" class="block__actions"><slot name="actions" /></div>
+      </div>
     </div>
 
     <p class="visually-hidden" role="status">{{ showSkeleton ? t('weather.loading') : '' }}</p>
@@ -109,14 +210,14 @@ const errorText = computed(() => {
       class="block__body"
       :class="{ 'block__body--refreshing': status === 'loading' }"
     >
-      <WeatherCard :city="city" :weather="current" />
+      <WeatherCard v-if="view === 'day'" :city="city" :weather="current" />
+      <WeekCard v-else :city="city" :days="days" :timezone="timezone" :today="today" />
       <TempChart
-        v-if="series.length && forecast"
-        :points="series"
-        :timezone="forecast.timezone"
-        :city-name="name"
-        :title="chartTitle"
-        :subtitle="t('chart.subtitle')"
+        v-if="chart.points.length"
+        :points="chart.points"
+        :title="chart.title"
+        :subtitle="chart.subtitle"
+        :summary="chart.summary"
       />
     </div>
   </section>
@@ -148,14 +249,24 @@ const errorText = computed(() => {
 
 .block__toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
 }
 
 .block__search {
-  flex: 1;
+  flex: 1 1 260px;
   min-width: 0;
   max-width: 420px;
+}
+
+/* Next to the search on wide screens; on narrow ones it wraps to its own row under the search. */
+.block__controls {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
 }
 
 .block__actions {

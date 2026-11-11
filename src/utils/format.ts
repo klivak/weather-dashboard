@@ -37,6 +37,17 @@ export function formatDayDate(dt: number, timezone: number, locale: Locale): str
   return formatter(locale, { weekday: 'short', day: 'numeric', month: 'short' }).format(shifted(dt, timezone))
 }
 
+/** "Thu" / "Чт" (capitalised, as Ukrainian weekday names come in lower case). */
+export function formatShortWeekday(dt: number, timezone: number, locale: Locale): string {
+  const text = formatter(locale, { weekday: 'short' }).format(shifted(dt, timezone))
+  return text.charAt(0).toLocaleUpperCase(INTL_LOCALE[locale]) + text.slice(1)
+}
+
+/** "12 Nov" / "12 лист.". */
+export function formatShortDate(dt: number, timezone: number, locale: Locale): string {
+  return formatter(locale, { day: 'numeric', month: 'short' }).format(shifted(dt, timezone))
+}
+
 /** "Tuesday" / "вівторок". */
 export function formatWeekday(dt: number, timezone: number, locale: Locale): string {
   return formatter(locale, { weekday: 'long' }).format(shifted(dt, timezone))

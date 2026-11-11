@@ -69,7 +69,13 @@ function mountBlock(city: City | null = lviv, locale: 'en' | 'uk' = 'en') {
     props: { city },
     global: {
       plugins: [pinia],
-      stubs: { TempChart: { name: 'TempChart', template: '<div class="chart-stub" />', props: ['points'] } },
+      stubs: {
+        TempChart: {
+          name: 'TempChart',
+          template: '<div class="chart-stub" />',
+          props: ['points', 'title', 'summary'],
+        },
+      },
     },
   })
   return wrapper
@@ -123,8 +129,11 @@ describe('WeatherBlock', () => {
   it('passes today’s series to the chart', async () => {
     const block = mountBlock()
     await flushPromises()
-    const points = block.findComponent({ name: 'TempChart' }).props('points') as { now: boolean }[]
-    expect(points[0]?.now).toBe(true)
+    const points = block.findComponent({ name: 'TempChart' }).props('points') as {
+      highlight?: boolean
+      label: string
+    }[]
+    expect(points[0]).toMatchObject({ highlight: true, label: 'Now' })
     expect(points.length).toBeGreaterThanOrEqual(8)
   })
 
@@ -162,13 +171,56 @@ describe('WeatherBlock chart title', () => {
     api.getForecast.mockResolvedValue({ ...forecast, points: forecast.points.slice(0, 3) })
     const block = mountBlock()
     await flushPromises()
-    expect(block.findComponent({ name: 'TempChart' }).attributes('title')).toBe('Temperature today')
+    expect(block.findComponent({ name: 'TempChart' }).props('title')).toBe('Temperature today')
     block.unmount()
 
     api.getCurrentWeather.mockResolvedValue(current)
     api.getForecast.mockResolvedValue(forecast)
     const evening = mountBlock()
     await flushPromises()
-    expect(evening.findComponent({ name: 'TempChart' }).attributes('title')).toBe('Next 24 hours')
+    expect(evening.findComponent({ name: 'TempChart' }).props('title')).toBe('Next 24 hours')
+  })
+})
+
+describe('WeatherBlock 5-day view', () => {
+  it('switches the card and chart to daily averages and back', async () => {
+    const block = mountBlock()
+    await flushPromises()
+    const [dayRadio, weekRadio] = block.findAll('[role="radio"]')
+    expect(dayRadio?.text()).toBe('Day')
+    expect(dayRadio?.attributes('aria-checked')).toBe('true')
+
+    await weekRadio?.trigger('click')
+    expect(block.find('.card__temp').exists()).toBe(false)
+    const rows = block.findAll('.week li')
+    // Fixture: 10 points every 3 h from 15:00 local on 11 Nov → two local days.
+    expect(rows).toHaveLength(2)
+    expect(rows[0]?.text()).toContain('Today')
+    expect(rows[0]?.classes()).toContain('day--today')
+    expect(rows[1]?.find('.day__name').text()).toBe('Thu')
+    expect(rows[0]?.find('.day__avg').attributes('aria-label')).toBe('Average −1°')
+    expect(rows[0]?.find('.day__rain').text()).toContain('20%')
+
+    const chart = block.findComponent({ name: 'TempChart' })
+    expect(chart.props('title')).toBe('Average temperature by day')
+    const points = chart.props('points') as { value: number; min?: number; max?: number; label: string }[]
+    // 11 Nov local: 15, 18, 21 h → temps −2, −1, 0 (mean −1); minimum is the reported tempMin −3.
+    expect(points[0]).toMatchObject({ label: 'Today', value: -1, min: -3, max: 0 })
+    expect(chart.props('summary')).toContain('5-day forecast for Lviv')
+
+    await dayRadio?.trigger('click')
+    expect(block.find('.card__temp').exists()).toBe(true)
+  })
+
+  it('offers the switch on favourites blocks, which have no search', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    wrapper = mount(WeatherBlock, {
+      props: { city: lviv, searchable: false },
+      global: { plugins: [pinia], stubs: { TempChart: true } },
+    })
+    await flushPromises()
+    expect(wrapper.find('[role="combobox"]').exists()).toBe(false)
+    expect(wrapper.find('[role="radiogroup"]').attributes('aria-label')).toBe('Forecast period')
   })
 })

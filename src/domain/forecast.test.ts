@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CurrentWeather, Forecast, ForecastPoint } from '@/api/models'
-import { compassPoint, formatDayDate, formatTemp, formatTime } from '@/utils/format'
+import { compassPoint, formatDayDate, formatShortWeekday, formatTemp, formatTime } from '@/utils/format'
 import { dailySummaries, localDateKey, todaySeries } from './forecast'
 
 const KYIV_TZ = 7200
@@ -198,5 +198,12 @@ describe('dailySummaries', () => {
         ]),
       )[0]?.condition.id,
     ).toBe(500)
+  })
+})
+
+describe('formatShortWeekday', () => {
+  it('capitalises the weekday in both languages', () => {
+    expect(formatShortWeekday(MIDNIGHT + 12 * HOUR, KYIV_TZ, 'uk')).toBe('Ср')
+    expect(formatShortWeekday(MIDNIGHT + 12 * HOUR, KYIV_TZ, 'en')).toBe('Wed')
   })
 })

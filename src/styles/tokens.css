@@ -88,9 +88,9 @@
   --icon-sun: #f5a524;
   --icon-moon: #f3d98b;
   --icon-cloud: #ffffff;
-  --icon-cloud-edge: rgb(20 44 84 / 0.16);
-  --icon-cloud-back: #c9d6e8;
-  --icon-cloud-dark: #dbe2ec;
+  --icon-cloud-edge: rgb(20 44 84 / 0.24);
+  --icon-cloud-back: #b4c3d9;
+  --icon-cloud-dark: #cfd8e5;
   --icon-rain: #3b82f6;
   --icon-snow: #7aa7d9;
   --icon-mist: #9aa9bf;
