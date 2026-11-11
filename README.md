@@ -30,13 +30,13 @@ Built with Vue 3, TypeScript, Pinia and Chart.js. All styling is hand-written CS
 - **Jump bar on phones:** a sticky row of city chips under the tabs scrolls to a block and follows the one in view.
 - **Use my location:** a button in the search field picks the city at the device position (browser geolocation), with clear messages when permission is blocked.
 - **The API key never reaches the browser:** requests go through an allow-listed proxy (Vite in development, a Cloudflare Pages Function in production) that adds the key server-side.
-- **Everything persists:** blocks, chosen cities, favourites, language and look survive a reload; corrupted storage is ignored safely.
+- **Everything persists:** blocks, chosen cities, views, favourites, language, look and units survive a reload. Everything read back from storage is versioned and validated, so corrupted or outdated data is ignored instead of rendered.
 - **Accessibility:** semantic landmarks and headings, tabs and segmented controls with arrow-key navigation, focus-trapped native `<dialog>` modals with Esc and focus return, a polite live region for status messages, a hidden data table for every chart, visible focus, `prefers-reduced-motion` respected. Automated axe checks (WCAG 2.2 AA) run in the end-to-end tests in both looks.
 - **Own SVG weather icons** for ten condition types with day and night variants.
 - **Fast first paint:** a static shell (header and block skeleton) is in the HTML, the right day or night look is set before the first frame, Chart.js loads as a separate chunk fetched in parallel with the first weather requests and is built on an idle frame, and on a first visit the IP lookup starts from the page head while the app downloads. The Favourites tab mounts only when opened, so its blocks do not fetch on every load.
 - **Instant on return:** the last weather for each city and language (up to 3 hours old) is shown immediately from `localStorage` and refreshed in the background.
 - **Always fresh:** weather refreshes quietly every 10 minutes while the tab is visible (and as soon as you come back to it); a failed load retries when the connection returns. Each home block remembers its Day / 5 days choice.
-- **Production hardening:** Cloudflare caches OpenWeatherMap answers at the edge; the build emits `_headers` with a strict Content-Security-Policy (the inline script allowed by hash), security headers and year-long caching for fingerprinted assets. An end-to-end test runs the app under that policy.
+- **Production hardening:** the proxy accepts only validated params (coordinates in range and rounded, known units and languages, short queries), Cloudflare caches successful OpenWeatherMap answers at the edge and never errors; the build emits `_headers` with a strict Content-Security-Policy (the inline script allowed by hash), security headers and year-long caching for fingerprinted assets. An end-to-end test runs the app under that policy.
 - **Resilient networking:** request timeouts, typed errors with readable messages and retry, a 10-minute cache, deduplicated and cancellable requests so a slow answer never overwrites a newer one.
 
 ## Tech
@@ -56,16 +56,16 @@ Built with Vue 3, TypeScript, Pinia and Chart.js. All styling is hand-written CS
 
 ```
 src/
-  api/          fetch wrapper, cache, OpenWeatherMap client, city search, IP and device location
-  domain/       pure logic: hourly and daily series, day/night, condition icons, limits, distances
-  stores/       blocks, favourites, settings, theme (Pinia)
-  composables/  useWeather, useCitySearch, useHashTab, useAnnouncer
-  components/   base UI, search, weather (card, week, chart, icons), favourites, layout
+  api/          fetch wrapper and cache, OpenWeatherMap client, Open-Meteo city search, IP and device location, weather snapshots
+  domain/       pure logic: hourly and daily series, day/night, condition icons, units, limits, distances, popular cities
+  stores/       Pinia: blocks, favourites, settings (language, look, units), theme
+  composables/  useWeather, useBlockChart, useCitySearch, useDefaultCity, useBlockTransitions, useToasts, useAnnouncer, useNow, useCountUp, useHashTab
+  components/   base UI (button, modal, menu, tabs, segmented control), search, weather (block, card, week, chart, icons, skeletons), favourites, layout
   views/        Home and Favourites tabs
   i18n/         typed en/uk messages
-build/          Vite plugin that writes Cloudflare _headers (CSP with script hashes, caching)
+server/         the proxy logic (validation, edge caching)
 functions/      Cloudflare Pages Function for /api/owm/*
-server/         the proxy logic used by that function
+build/          Vite plugin that writes Cloudflare _headers (CSP with script hashes, caching)
 e2e/            Playwright tests with mocked APIs
 ```
 
@@ -99,3 +99,4 @@ npm run dev
 - Build command `npm run build`, output directory `dist`, Node 24.
 - The `functions/` directory is deployed automatically as Pages Functions.
 - Set the secret `OWM_API_KEY` in the project settings (or `npx wrangler pages secret put OWM_API_KEY`).
+- Add a rate-limiting rule for `/api/*` in the Cloudflare dashboard (for example 60 requests per minute per IP), so nobody can use up the free OpenWeatherMap quota with valid but endless requests.

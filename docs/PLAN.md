@@ -47,19 +47,22 @@ Extras:
 
 ```
 src/
-  api/          fetch wrapper, OpenWeatherMap client, Open-Meteo city search, IP lookup, response types
-  domain/       pure logic: forecast grouping/averages, limits, day/night (unit tested)
-  stores/       Pinia: blocks, favourites, settings (locale, units, theme)
-  composables/  useWeather, useDebounced, useModal, ...
-  i18n/         en.ts, uk.ts, typed t()
-  components/   AppHeader, TabBar, WeatherBlock, CitySearch, WeatherCard, TempChart, BaseModal, Loader, ...
-  styles/       tokens + base CSS
-functions/api/owm/[[path]].ts   Cloudflare Pages Function: allow-listed proxy that adds the API key
+  api/          fetch wrapper and cache, OpenWeatherMap client, Open-Meteo city search, IP and device location, weather snapshots
+  domain/       pure logic: hourly and daily series, day/night, condition icons, units, limits, distances, popular cities
+  stores/       Pinia: blocks, favourites, settings (language, look, units), theme
+  composables/  useWeather, useBlockChart, useCitySearch, useDefaultCity, useBlockTransitions, useToasts, useAnnouncer, useNow, useCountUp, useHashTab
+  components/   base UI (button, modal, menu, tabs, segmented control), search, weather (block, card, week, chart, icons, skeletons), favourites, layout
+  views/        Home and Favourites tabs
+  i18n/         typed en/uk messages
+server/         the proxy logic (validation, edge caching)
+functions/      Cloudflare Pages Function for /api/owm/*
+build/          Vite plugin that writes Cloudflare _headers (CSP with script hashes, caching)
+e2e/            Playwright tests with mocked APIs
 ```
 
 Decisions:
 
-- **Key stays server-side.** The client calls `/api/owm/...`; Vite's dev proxy (local) and a Pages Function (prod) append `appid`. Only `/data/2.5/weather`, `/data/2.5/forecast`, `/geo/1.0/direct` and `/geo/1.0/reverse` are allowed.
+- **Key stays server-side.** The client calls `/api/owm/...`; Vite's dev proxy (local) and a Pages Function (prod) append `appid`. Only `/data/2.5/weather`, `/data/2.5/forecast`, `/geo/1.0/direct` and `/geo/1.0/reverse` are allowed, every param is required and validated (coordinates in range and rounded to 2 decimals, `units=metric`, `lang=en|uk`, short queries, `limit` 1–5), successful answers are cached at the edge and errors are not. A user-requested refresh (`fetch(..., { cache: 'reload' })`, which sends `Cache-Control: no-cache`) skips the edge. Request volume is limited by a Cloudflare rate-limiting rule, not in code.
 - **Weather (OpenWeatherMap, free tier):** Current Weather for the card, 5 day / 3 hour Forecast for the chart and the 5-day view, `lang=en|uk`. Blocks store `lat/lon` plus names, never a free-text query.
 - **City autocomplete (Open-Meteo geocoding):** OpenWeatherMap's geocoder only matches whole names ("Lond" does not find London), so suggestions come from Open-Meteo's free, key-less prefix search: queried in the script the user types (Cyrillic → Ukrainian), with the other language fetched in parallel so each city has both names; districts and abandoned places filtered out; OpenWeatherMap `geo/1.0/direct` is the fallback when Open-Meteo is down or finds nothing.
 - **Hourly chart for today** = the live reading plus the 3-hour forecast points left in the city's local day (shifted by `timezone`), always titled "Temperature today". Only when fewer than 4 points remain (late evening) does it continue into the next morning up to 8 points, with a dashed "Tomorrow" line marking where the next day starts.
