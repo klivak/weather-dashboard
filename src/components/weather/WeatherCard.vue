@@ -11,7 +11,7 @@ import WeatherIcon from './WeatherIcon.vue'
 
 const props = defineProps<{ city: City; weather: CurrentWeather }>()
 
-defineSlots<{ actions?: () => unknown }>()
+defineSlots<{ actions?: () => unknown; meta?: () => unknown }>()
 
 const { t, locale } = useI18n()
 
@@ -69,6 +69,7 @@ const details = computed(() => {
           <span v-if="region">{{ region }}</span>
           <span class="visually-hidden">{{ t('weather.localTime') }}:</span>
           <time class="card__time">{{ localNow }}</time>
+          <slot name="meta" />
         </p>
       </div>
       <div v-if="$slots.actions" class="card__actions"><slot name="actions" /></div>
@@ -170,7 +171,7 @@ const details = computed(() => {
   font-size: var(--text-sm);
 }
 
-.card__meta > span:first-child::after {
+.card__meta > span:first-child:not(.stamp, .visually-hidden)::after {
   content: '·';
   margin-left: var(--space-2);
 }

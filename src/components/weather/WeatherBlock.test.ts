@@ -232,7 +232,7 @@ describe('WeatherBlock extras', () => {
   it('shows when the data was updated and refreshes it on demand', async () => {
     const block = mountBlock()
     await flushPromises()
-    expect(block.find('.block__meta').text()).toContain('Updated just now')
+    expect(block.find('.card__meta .stamp').text()).toContain('Updated just now')
 
     await block.find('[aria-label="Refresh the weather"]').trigger('click')
     await flushPromises()

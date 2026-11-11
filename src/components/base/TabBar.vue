@@ -127,9 +127,10 @@ function onKeydown(event: KeyboardEvent, index: number) {
   min-width: 22px;
   padding: 0 var(--space-2);
   border-radius: var(--radius-pill);
-  background: var(--surface-sunken);
-  color: var(--text-muted);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--text);
   font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
   line-height: 22px;
   text-align: center;
   font-variant-numeric: tabular-nums;

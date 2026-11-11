@@ -3,7 +3,6 @@ import { computed, defineAsyncComponent, onBeforeUnmount, onScopeDispose, watch 
 import type { City } from '@/api/models'
 import { cityName } from '@/api/models'
 import BaseButton from '@/components/base/BaseButton.vue'
-import BaseSpinner from '@/components/base/BaseSpinner.vue'
 import SegmentedControl from '@/components/base/SegmentedControl.vue'
 import CitySearch from '@/components/search/CitySearch.vue'
 import { useNow } from '@/composables/useNow'
@@ -16,6 +15,7 @@ import ChartSkeleton from './ChartSkeleton.vue'
 import type { ChartPoint } from './TempChart.vue'
 import { loadTempChart } from './loadTempChart'
 import WeatherCard from './WeatherCard.vue'
+import UpdatedStamp from './UpdatedStamp.vue'
 import WeekCard from './WeekCard.vue'
 
 const props = withDefaults(
@@ -280,8 +280,16 @@ const errorText = computed(() => {
       class="block__body"
       :class="{ 'block__body--refreshing': status === 'loading' }"
     >
-      <WeatherCard v-if="view === 'day'" :city="city" :weather="current" />
-      <WeekCard v-else :city="city" :days="days" :timezone="timezone" :today="today" />
+      <WeatherCard v-if="view === 'day'" :city="city" :weather="current">
+        <template v-if="updatedLabel" #meta>
+          <UpdatedStamp :label="updatedLabel" :refreshing="refreshing" @refresh="refresh" />
+        </template>
+      </WeatherCard>
+      <WeekCard v-else :city="city" :days="days" :timezone="timezone" :today="today">
+        <template v-if="updatedLabel" #meta>
+          <UpdatedStamp :label="updatedLabel" :refreshing="refreshing" @refresh="refresh" />
+        </template>
+      </WeekCard>
       <figure v-if="chart.points.length" class="block__chart">
         <figcaption class="block__chart-caption">
           <span class="block__chart-title">{{ chart.title }}</span>
@@ -295,33 +303,6 @@ const errorText = computed(() => {
           :boundary-label="t('chart.tomorrow')"
         />
       </figure>
-      <div v-if="updatedLabel" class="block__meta">
-        <span>{{ updatedLabel }}</span>
-        <button
-          type="button"
-          class="block__refresh"
-          :aria-label="t('updated.refresh')"
-          :title="t('updated.refresh')"
-          :disabled="refreshing"
-          @click="refresh"
-        >
-          <BaseSpinner v-if="refreshing" :size="16" />
-          <svg
-            v-else
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.9"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" />
-          </svg>
-        </button>
-      </div>
     </div>
   </section>
 </template>
@@ -441,44 +422,6 @@ const errorText = computed(() => {
 
 .block__chip:active {
   transform: scale(0.96);
-}
-
-.block__meta {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--space-2);
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-}
-
-@media (min-width: 1024px) {
-  .block__meta {
-    grid-column: 1 / -1;
-  }
-}
-
-.block__refresh {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  background: transparent;
-  color: var(--text-muted);
-  transition:
-    color var(--dur-fast) var(--ease-out),
-    transform var(--dur-base) var(--ease-out);
-}
-
-.block__refresh:hover:not(:disabled) {
-  color: var(--text);
-  transform: rotate(-60deg);
-}
-
-.block__refresh:disabled {
-  cursor: progress;
 }
 
 .block__hint {

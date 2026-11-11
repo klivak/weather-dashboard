@@ -16,6 +16,8 @@ const props = defineProps<{
   today: string
 }>()
 
+defineSlots<{ meta?: () => unknown }>()
+
 const { t, locale } = useI18n()
 
 const name = computed(() => cityName(props.city, locale.value))
@@ -39,7 +41,7 @@ const rows = computed(() =>
       <h3 class="week__city">{{ name }}</h3>
       <p class="week__meta">
         <span v-if="region">{{ region }}</span>
-        <span>{{ t('week.title') }}</span>
+        <slot name="meta" />
       </p>
     </header>
 
@@ -106,7 +108,7 @@ const rows = computed(() =>
   font-size: var(--text-sm);
 }
 
-.week__meta > span + span::before {
+.week__meta > span:not(:first-child, .stamp, .visually-hidden)::before {
   content: '·';
   margin-right: var(--space-2);
 }
@@ -149,7 +151,11 @@ const rows = computed(() =>
 }
 
 .day--today {
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface-sunken));
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.day--today .day__name {
+  font-weight: var(--weight-bold);
 }
 
 .day__when {
