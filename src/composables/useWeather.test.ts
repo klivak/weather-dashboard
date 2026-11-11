@@ -1,9 +1,9 @@
 import { flushPromises } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
 import { ApiError } from '@/api/http'
 import type { City, Locale } from '@/api/models'
-import { useWeather } from './useWeather'
+import { REFRESH_AFTER_MS, useWeather } from './useWeather'
 
 const api = vi.hoisted(() => ({ getCurrentWeather: vi.fn(), getForecast: vi.fn() }))
 vi.mock('@/api/owm', () => api)
@@ -11,10 +11,17 @@ vi.mock('@/api/owm', () => api)
 const kyiv: City = { id: 'k', name: 'Kyiv', names: {}, country: 'UA', lat: 50.45, lon: 30.52 }
 const lviv: City = { id: 'l', name: 'Lviv', names: {}, country: 'UA', lat: 49.84, lon: 24.03 }
 
+const scopes: ReturnType<typeof effectScope>[] = []
+
+afterEach(() => {
+  for (const scope of scopes.splice(0)) scope.stop()
+})
+
 function setup(initial: City | null = kyiv) {
   const city = ref<City | null>(initial)
   const locale = ref<Locale>('en')
   const scope = effectScope()
+  scopes.push(scope)
   const weather = scope.run(() =>
     useWeather(
       () => city.value,
@@ -98,5 +105,66 @@ describe('useWeather', () => {
     const signal = api.getCurrentWeather.mock.calls[0]?.[2] as AbortSignal
     other.scope.stop()
     expect(signal.aborted).toBe(true)
+  })
+})
+
+describe('useWeather freshness', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true })
+  })
+
+  function setVisibility(state: 'visible' | 'hidden') {
+    Object.defineProperty(document, 'visibilityState', { value: state, configurable: true })
+    document.dispatchEvent(new Event('visibilitychange'))
+  }
+
+  it('refreshes quietly once the data is ten minutes old, only while the tab is visible', async () => {
+    vi.useFakeTimers()
+    const { weather } = setup()
+    await flushPromises()
+    expect(api.getCurrentWeather).toHaveBeenCalledTimes(1)
+
+    setVisibility('hidden')
+    await vi.advanceTimersByTimeAsync(REFRESH_AFTER_MS + 60_000)
+    expect(api.getCurrentWeather).toHaveBeenCalledTimes(1)
+
+    api.getCurrentWeather.mockImplementationOnce(() => Promise.resolve({ temp: 6, lang: 'en' }))
+    setVisibility('visible')
+    expect(weather.status.value).toBe('success')
+    await flushPromises()
+    expect(api.getCurrentWeather).toHaveBeenCalledTimes(2)
+    expect(weather.current.value).toEqual({ temp: 6, lang: 'en' })
+  })
+
+  it('keeps the shown data when a background refresh fails', async () => {
+    vi.useFakeTimers()
+    const { weather } = setup()
+    await flushPromises()
+    api.getCurrentWeather.mockRejectedValueOnce(new ApiError('network', 'offline'))
+    await vi.advanceTimersByTimeAsync(REFRESH_AFTER_MS + 60_000)
+    await flushPromises()
+    expect(weather.status.value).toBe('success')
+    expect(weather.current.value).toEqual({ temp: 5, lang: 'en' })
+  })
+
+  it('retries a failed load when the connection comes back', async () => {
+    api.getCurrentWeather.mockRejectedValueOnce(new ApiError('network', 'offline'))
+    const { weather } = setup()
+    await flushPromises()
+    expect(weather.status.value).toBe('error')
+
+    window.dispatchEvent(new Event('online'))
+    await flushPromises()
+    expect(weather.status.value).toBe('success')
+  })
+
+  it('stops listening when disposed', async () => {
+    vi.useFakeTimers()
+    const { scope } = setup()
+    await flushPromises()
+    scope.stop()
+    await vi.advanceTimersByTimeAsync(REFRESH_AFTER_MS * 2)
+    expect(api.getCurrentWeather).toHaveBeenCalledTimes(1)
   })
 })
