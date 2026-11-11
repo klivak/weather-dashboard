@@ -4,7 +4,7 @@ Compare the weather in up to five cities side by side: current conditions, an ho
 
 ## Status
 
-Current step: **9 — Day / night look**. Each step ends green on `npm run check` and with its own commits.
+Current step: **10 — Polish**. Each step ends green on `npm run check` and with its own commits.
 
 | #   | Step                                               | State |
 | --- | -------------------------------------------------- | ----- |
@@ -17,8 +17,8 @@ Current step: **9 — Day / night look**. Each step ends green on `npm run check
 | 6   | Favourites tab (localStorage, max 5, limit modal)  | done  |
 | 7   | Day / 5-day switch                                 | done  |
 | 8   | Default city from IP                               | done  |
-| 9   | Day / night look                                   | next  |
-| 10  | Polish: a11y, responsive 360–1200, e2e, README     |       |
+| 9   | Day / night look                                   | done  |
+| 10  | Polish: a11y, responsive 360–1200, e2e, README     | next  |
 | 11  | Deploy to Cloudflare Pages                         |       |
 
 ## Requirements
@@ -66,7 +66,7 @@ Decisions:
 - **5-day view** groups forecast points by the city's local date; mean, min and max temperature per day; the icon is the most frequent daytime condition.
 - **Default city:** first visit only (a restored layout is left alone): `get.geojs.io` → `ipapi.co` give a rough point and a city name; the name is matched in the geocoder to the place nearest the point (reverse geocoding the point itself returned villages next to the city), reverse geocoding is the fallback, Kyiv when everything fails or is blocked. The block shows "Finding your city…" meanwhile and a city the user picks in the meantime wins. Cached for the session.
 - **Use my location (extra):** a button in the search field asks the browser for the device position and reverse-geocodes it; blocked permission and failures are explained under the field.
-- **Day / night:** `auto` follows the selected city's sunrise/sunset; manual `day` / `night` override; saved in `localStorage`.
+- **Day / night:** a header switch with `auto` (default), `day` and `night`, saved in `localStorage`. `auto` compares the local time of day with sunrise and sunset of the first home city (works for days-old data), falls back to 07:00–19:00 on the device clock, and is re-checked every minute. The change crossfades with the View Transitions API where available (not under reduced motion).
 - **State:** Pinia stores, persisted keys `wd:blocks`, `wd:favourites`, `wd:settings` with versioned schemas and safe parsing.
 - **Caching:** in-memory per `(endpoint, lat, lon, lang)` for 10 minutes; in-flight requests are deduplicated; stale responses are dropped with `AbortController`.
 
