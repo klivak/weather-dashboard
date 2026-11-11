@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { CurrentWeather, Forecast, ForecastPoint } from '@/api/models'
 import { compassPoint, formatDayDate, formatTemp, formatTime } from '@/utils/format'
-import { localDateKey, todaySeries } from './forecast'
+import { dailySummaries, localDateKey, todaySeries } from './forecast'
 
 const KYIV_TZ = 7200
 const HOUR = 3600
@@ -111,5 +111,92 @@ describe('format', () => {
     [-90, 'W'],
   ] as const)('%d° → %s', (degrees, expected) => {
     expect(compassPoint(degrees)).toBe(expected)
+  })
+})
+
+describe('dailySummaries', () => {
+  const rain = { id: 500, main: 'Rain', description: 'light rain', icon: '10d' }
+  const clouds = { id: 804, main: 'Clouds', description: 'overcast', icon: '04d' }
+  const thunder = { id: 211, main: 'Thunderstorm', description: 'thunderstorm', icon: '11d' }
+
+  function at(hoursFromMidnight: number, temp: number, extra: Partial<ForecastPoint> = {}): ForecastPoint {
+    return { ...point(MIDNIGHT + hoursFromMidnight * HOUR, temp), ...extra }
+  }
+
+  it('groups by the city local date and averages the 3-hour temperatures', () => {
+    const points = [
+      at(19, 4, { tempMin: 3.5 }),
+      at(22, 2),
+      ...[1, 4, 7, 10, 13, 16, 19, 22].map((h, i) => at(24 + h, i * 2, { pop: i === 3 ? 0.6 : 0.1 })),
+      at(48 + 1, -1, { tempMax: 0 }),
+    ]
+    const days = dailySummaries({ timezone: KYIV_TZ, sunrise: 0, sunset: 0, points })
+
+    expect(days.map((day) => day.date)).toEqual(['2026-11-11', '2026-11-12', '2026-11-13'])
+    expect(days[0]).toMatchObject({ avg: 3, min: 2, max: 4, samples: 2 })
+    expect(days[1]).toMatchObject({ avg: 7, min: 0, max: 14, pop: 0.6, samples: 8 })
+    expect(days[2]).toMatchObject({ avg: -1, min: -1, max: 0, samples: 1 })
+  })
+
+  it('uses the min and max reported inside each point when they are wider than the readings', () => {
+    const [day] = dailySummaries({
+      timezone: KYIV_TZ,
+      sunrise: 0,
+      sunset: 0,
+      points: [at(10, 5, { tempMin: 3, tempMax: 7 }), at(13, 6)],
+    })
+    expect(day).toMatchObject({ avg: 5.5, min: 3, max: 7 })
+  })
+
+  it('stops at the requested number of days', () => {
+    const points = Array.from({ length: 40 }, (_, i) => at(1 + i * 3, i))
+    const days = dailySummaries({ timezone: KYIV_TZ, sunrise: 0, sunset: 0, points })
+    expect(days).toHaveLength(5)
+    expect(days.at(-1)?.date).toBe('2026-11-15')
+  })
+
+  it('picks the most frequent daytime condition, breaking ties towards the more severe one', () => {
+    const forecast = (conditions: [typeof rain, boolean][]) => ({
+      timezone: KYIV_TZ,
+      sunrise: 0,
+      sunset: 0,
+      points: conditions.map(([condition, isDay], i) => at(1 + i * 3, 0, { condition, isDay })),
+    })
+    expect(
+      dailySummaries(
+        forecast([
+          [rain, true],
+          [clouds, true],
+          [clouds, true],
+          [rain, false],
+          [rain, false],
+        ]),
+      )[0]?.condition.id,
+    ).toBe(804)
+    expect(
+      dailySummaries(
+        forecast([
+          [rain, true],
+          [clouds, true],
+        ]),
+      )[0]?.condition.id,
+    ).toBe(500)
+    expect(
+      dailySummaries(
+        forecast([
+          [clouds, true],
+          [thunder, true],
+        ]),
+      )[0]?.condition.id,
+    ).toBe(211)
+    expect(
+      dailySummaries(
+        forecast([
+          [rain, false],
+          [clouds, false],
+          [rain, false],
+        ]),
+      )[0]?.condition.id,
+    ).toBe(500)
   })
 })
