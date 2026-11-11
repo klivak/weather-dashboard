@@ -77,6 +77,7 @@ const details = computed(() => {
         :code="weather.condition.id"
         :day="isDayIcon(weather.condition.icon)"
         :size="96"
+        animated
       />
       <div>
         <p class="card__temp">{{ formatTemp(weather.temp) }}</p>

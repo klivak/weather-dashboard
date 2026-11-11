@@ -2,10 +2,16 @@
 import { computed } from 'vue'
 import { conditionKind } from '@/domain/conditions'
 
-const props = withDefaults(defineProps<{ code: number; day?: boolean; size?: number }>(), {
-  day: true,
-  size: 48,
-})
+const props = withDefaults(
+  defineProps<{
+    code: number
+    day?: boolean
+    size?: number
+    /** Gentle looping motion (sun rays turn, clouds drift, rain falls); stops under reduced motion. */
+    animated?: boolean
+  }>(),
+  { day: true, size: 48, animated: false },
+)
 
 const kind = computed(() => conditionKind(props.code))
 const hasPrecipitation = computed(() => ['drizzle', 'rain', 'sleet', 'snow', 'thunder'].includes(kind.value))
@@ -15,7 +21,14 @@ const showBackCloud = computed(() => ['cloudy', 'overcast', 'thunder', 'rain', '
 </script>
 
 <template>
-  <svg class="wx" :class="`wx--${kind}`" :width="size" :height="size" viewBox="0 0 64 64" aria-hidden="true">
+  <svg
+    class="wx"
+    :class="[`wx--${kind}`, { 'wx--animated': animated }]"
+    :width="size"
+    :height="size"
+    viewBox="0 0 64 64"
+    aria-hidden="true"
+  >
     <!-- Sun or moon -->
     <g v-if="showSky" :transform="kind === 'partly' ? 'translate(2 1) scale(0.66)' : undefined">
       <g v-if="day" class="wx__sun">
@@ -48,28 +61,33 @@ const showBackCloud = computed(() => ['cloudy', 'overcast', 'thunder', 'rain', '
 
     <!-- Precipitation -->
     <g v-if="kind === 'rain'" class="wx__rain" stroke-width="3" stroke-linecap="round">
-      <path d="M24 50l-3 8M33 50l-3 8M42 50l-3 8" />
+      <path class="wx__drop" d="M24 50l-3 8" />
+      <path class="wx__drop" d="M33 50l-3 8" />
+      <path class="wx__drop" d="M42 50l-3 8" />
     </g>
     <g v-else-if="kind === 'drizzle'" class="wx__rain-fill">
-      <circle cx="23" cy="53" r="2" />
-      <circle cx="32" cy="57" r="2" />
-      <circle cx="41" cy="53" r="2" />
+      <circle class="wx__drop" cx="23" cy="53" r="2" />
+      <circle class="wx__drop" cx="32" cy="57" r="2" />
+      <circle class="wx__drop" cx="41" cy="53" r="2" />
     </g>
     <g v-else-if="kind === 'snow'" class="wx__snow" stroke-width="2.4" stroke-linecap="round">
-      <path d="M24 49v8M20.5 51l7 4M27.5 51l-7 4" />
-      <path d="M40 49v8M36.5 51l7 4M43.5 51l-7 4" />
+      <path class="wx__flake" d="M24 49v8M20.5 51l7 4M27.5 51l-7 4" />
+      <path class="wx__flake" d="M40 49v8M36.5 51l7 4M43.5 51l-7 4" />
     </g>
     <g v-else-if="kind === 'sleet'">
-      <path class="wx__rain" d="M25 50l-3 8" stroke-width="3" stroke-linecap="round" />
+      <path class="wx__rain wx__drop" d="M25 50l-3 8" stroke-width="3" stroke-linecap="round" />
       <g class="wx__snow" stroke-width="2.4" stroke-linecap="round">
-        <path d="M38 49v8M34.5 51l7 4M41.5 51l-7 4" />
+        <path class="wx__flake" d="M38 49v8M34.5 51l7 4M41.5 51l-7 4" />
       </g>
     </g>
     <path v-else-if="kind === 'thunder'" class="wx__bolt" d="M34 45l-8 11h6l-3 8 10-12h-6l3-7z" />
 
     <!-- Mist -->
     <g v-if="kind === 'mist'" class="wx__mist" stroke-width="3.5" stroke-linecap="round">
-      <path d="M12 24h40M8 33h34M18 42h38M12 51h30" />
+      <path class="wx__haze" d="M12 24h40" />
+      <path class="wx__haze" d="M8 33h34" />
+      <path class="wx__haze" d="M18 42h38" />
+      <path class="wx__haze" d="M12 51h30" />
     </g>
   </svg>
 </template>
@@ -124,5 +142,128 @@ const showBackCloud = computed(() => ['cloudy', 'overcast', 'thunder', 'rain', '
 
 .wx__mist {
   stroke: var(--icon-mist);
+}
+
+/* Motion: slow and small, so the icon feels alive without pulling attention. The global reduced-motion rule
+   stops all of it. */
+.wx--animated .wx__rays {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: wx-turn 24s linear infinite;
+}
+
+.wx--animated .wx__moon {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: wx-glow 6s ease-in-out infinite;
+}
+
+.wx--animated .wx__cloud {
+  animation: wx-drift 7s ease-in-out infinite alternate;
+}
+
+.wx--animated .wx__cloud-back {
+  animation: wx-drift 9s ease-in-out infinite alternate-reverse;
+}
+
+.wx--animated .wx__drop {
+  animation: wx-fall 1.4s linear infinite;
+}
+
+.wx--animated .wx__drop:nth-child(2) {
+  animation-delay: -0.45s;
+}
+
+.wx--animated .wx__drop:nth-child(3) {
+  animation-delay: -0.9s;
+}
+
+.wx--animated .wx__flake {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: wx-snow 3.2s ease-in-out infinite;
+}
+
+.wx--animated .wx__flake:nth-child(2) {
+  animation-delay: -1.6s;
+}
+
+.wx--animated .wx__bolt {
+  animation: wx-flash 4s ease-in-out infinite;
+}
+
+.wx--animated .wx__haze {
+  animation: wx-drift 5s ease-in-out infinite alternate;
+}
+
+.wx--animated .wx__haze:nth-child(even) {
+  animation-direction: alternate-reverse;
+}
+
+@keyframes wx-turn {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes wx-glow {
+  50% {
+    transform: scale(1.04);
+    opacity: 0.85;
+  }
+}
+
+@keyframes wx-drift {
+  from {
+    transform: translateX(-1.5px);
+  }
+  to {
+    transform: translateX(1.5px);
+  }
+}
+
+@keyframes wx-fall {
+  0% {
+    transform: translate(1px, -3px);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-2px, 5px);
+    opacity: 0;
+  }
+}
+
+@keyframes wx-snow {
+  0% {
+    transform: translateY(-3px) rotate(0deg);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(4px) rotate(60deg);
+    opacity: 0;
+  }
+}
+
+@keyframes wx-flash {
+  0%,
+  86%,
+  100% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 0.2;
+  }
+  90% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 0.4;
+  }
 }
 </style>
