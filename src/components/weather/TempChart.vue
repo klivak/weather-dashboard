@@ -250,10 +250,26 @@ function buildConfig(): ChartConfiguration<'line', number[], string> {
   }
 }
 
+let unmounted = false
+
+/** First build creates the chart; later changes (new data, units, language) update it in place. */
 function render() {
-  if (!canvas.value || !props.points.length) return
+  if (unmounted || !canvas.value || !props.points.length) return
+  const config = buildConfig()
+  if (!chart) {
+    chart = new Chart(canvas.value, config)
+    return
+  }
+  chart.data = config.data
+  chart.options = config.options ?? {}
+  chart.update()
+}
+
+/** Theme colours live in the gradient closures and plugins, so a theme change rebuilds from scratch. */
+function rebuild() {
   chart?.destroy()
-  chart = new Chart(canvas.value, buildConfig())
+  chart = undefined
+  render()
 }
 
 onMounted(() => {
@@ -261,13 +277,17 @@ onMounted(() => {
   const idle = window.requestIdleCallback ?? ((callback: () => void) => window.setTimeout(callback, 1))
   idle(() => render(), { timeout: 300 })
 })
-onBeforeUnmount(() => chart?.destroy())
+onBeforeUnmount(() => {
+  unmounted = true
+  chart?.destroy()
+  chart = undefined
+})
 
 // New data or labels: rebuild on the same canvas. Theme: colours come from CSS, so rebuild after the DOM updates.
 watch([() => props.points, () => props.boundaryIndex, () => props.boundaryLabel], render, { deep: true })
 watch(
   () => themeStore.theme,
-  () => nextTick(render),
+  () => nextTick(rebuild),
 )
 </script>
 

@@ -5,16 +5,17 @@ import { cityName } from '@/api/models'
 import BaseButton from '@/components/base/BaseButton.vue'
 import SegmentedControl from '@/components/base/SegmentedControl.vue'
 import CitySearch from '@/components/search/CitySearch.vue'
+import { useBlockChart } from '@/composables/useBlockChart'
 import { useNow } from '@/composables/useNow'
+import { useToasts } from '@/composables/useToasts'
 import { useWeather } from '@/composables/useWeather'
-import { dailySummaries, localDateKey, todaySeries, type ForecastView } from '@/domain/forecast'
+import type { ForecastView } from '@/domain/forecast'
 import { currentInUnits, forecastInUnits } from '@/domain/units'
 import { useI18n } from '@/i18n'
 import { useSettingsStore } from '@/stores/settings'
 import { useThemeStore } from '@/stores/theme'
-import { formatDayDate, formatShortWeekday, formatTemp, formatTime } from '@/utils/format'
+import BlockSkeleton from './BlockSkeleton.vue'
 import ChartSkeleton from './ChartSkeleton.vue'
-import type { ChartPoint } from './TempChart.vue'
 import { loadTempChart } from './loadTempChart'
 import WeatherCard from './WeatherCard.vue'
 import UpdatedStamp from './UpdatedStamp.vue'
@@ -95,6 +96,12 @@ onBeforeUnmount(() => {
   if (props.reportSun) themeStore.setSun(null)
 })
 
+const { show: showToast } = useToasts()
+
+async function refreshNow() {
+  if (!(await refresh())) showToast(t('updated.failed'), { icon: 'trash' })
+}
+
 const now = useNow(onScopeDispose)
 const updatedLabel = computed(() => {
   if (!updatedAt.value) return ''
@@ -112,97 +119,7 @@ const viewOptions = computed(() => [
 ])
 
 const name = computed(() => (props.city ? cityName(props.city, locale.value) : ''))
-const timezone = computed(() => forecast.value?.timezone ?? current.value?.timezone ?? 0)
-const today = computed(() => (current.value ? localDateKey(current.value.dt, current.value.timezone) : ''))
-
-const series = computed(() =>
-  current.value && forecast.value ? todaySeries(current.value, forecast.value) : [],
-)
-const days = computed(() => (forecast.value ? dailySummaries(forecast.value) : []))
-
-const dayPoints = computed<ChartPoint[]>(() =>
-  series.value.map((point) => {
-    const time = formatTime(point.dt, timezone.value, locale.value)
-    return {
-      label: point.now ? t('chart.now') : time,
-      title: `${formatDayDate(point.dt, timezone.value, locale.value)}, ${time}`,
-      value: point.temp,
-      highlight: point.now,
-      icon: { code: point.condition.id, day: point.isDay },
-      pop: point.pop,
-    }
-  }),
-)
-
-const weekPoints = computed<ChartPoint[]>(() =>
-  days.value.map((day) => ({
-    label:
-      day.date === today.value ? t('week.today') : formatShortWeekday(day.dt, timezone.value, locale.value),
-    title: formatDayDate(day.dt, timezone.value, locale.value),
-    value: day.avg,
-    min: day.min,
-    max: day.max,
-    highlight: day.date === today.value,
-    icon: { code: day.condition.id, day: true },
-    pop: day.pop,
-  })),
-)
-
-/** Late in the evening the hourly series borrows tomorrow's first points; the chart marks where they start. */
-const boundaryIndex = computed(() => {
-  const index = series.value.findIndex((point) => point.nextDay)
-  return index > 0 ? index : undefined
-})
-
-function extreme(points: ChartPoint[], pick: 'max' | 'min'): ChartPoint | undefined {
-  let best: ChartPoint | undefined
-  for (const point of points) {
-    if (!best || (pick === 'max' ? point.value > best.value : point.value < best.value)) best = point
-  }
-  return best
-}
-
-const chart = computed(() => {
-  if (view.value === 'week') {
-    const warm = extreme(weekPoints.value, 'max')
-    const cold = extreme(weekPoints.value, 'min')
-    return {
-      points: weekPoints.value,
-      title: t('chart.weekTitle'),
-      subtitle: t('chart.weekSubtitle'),
-      summary:
-        warm && cold
-          ? t('chart.weekSummary', {
-              city: name.value,
-              warm: warm.title,
-              warmTemp: formatTemp(warm.value),
-              cold: cold.title,
-              coldTemp: formatTemp(cold.value),
-            })
-          : '',
-    }
-  }
-  const first = series.value[0]
-  const max = extreme(dayPoints.value, 'max')
-  const min = extreme(dayPoints.value, 'min')
-  const timeOf = (point: ChartPoint) => point.title.split(', ').at(-1) ?? ''
-  return {
-    points: dayPoints.value,
-    title: t('chart.title'),
-    subtitle: t('chart.subtitle'),
-    summary:
-      first && max && min
-        ? t('chart.summary', {
-            city: name.value,
-            now: formatTemp(first.temp),
-            max: formatTemp(max.value),
-            maxTime: timeOf(max),
-            min: formatTemp(min.value),
-            minTime: timeOf(min),
-          })
-        : '',
-  }
-})
+const { chart, days, today, timezone } = useBlockChart(current, forecast, view, name)
 
 const showSkeleton = computed(
   () => (status.value === 'loading' && !current.value) || (!props.city && props.locating),
@@ -275,23 +192,7 @@ const errorText = computed(() => {
       <BaseButton size="sm" @click="reload">{{ t('weather.retry') }}</BaseButton>
     </div>
 
-    <div v-else-if="showSkeleton" class="block__body" aria-hidden="true">
-      <div class="skeleton">
-        <span class="skeleton__line skeleton__line--title" />
-        <span class="skeleton__line skeleton__line--meta" />
-        <div class="skeleton__now">
-          <span class="skeleton__circle" />
-          <span class="skeleton__line skeleton__line--temp" />
-        </div>
-        <div class="skeleton__grid">
-          <span v-for="cell in 6" :key="cell" class="skeleton__cell" />
-        </div>
-      </div>
-      <div class="block__chart skeleton">
-        <span class="skeleton__line skeleton__line--meta" />
-        <ChartSkeleton />
-      </div>
-    </div>
+    <BlockSkeleton v-else-if="showSkeleton" />
 
     <div
       v-else-if="current && city"
@@ -300,12 +201,12 @@ const errorText = computed(() => {
     >
       <WeatherCard v-if="view === 'day'" :city="city" :weather="current">
         <template v-if="updatedLabel" #meta>
-          <UpdatedStamp :label="updatedLabel" :refreshing="refreshing" @refresh="refresh" />
+          <UpdatedStamp :label="updatedLabel" :refreshing="refreshing" @refresh="refreshNow" />
         </template>
       </WeatherCard>
       <WeekCard v-else :city="city" :days="days" :timezone="timezone" :today="today">
         <template v-if="updatedLabel" #meta>
-          <UpdatedStamp :label="updatedLabel" :refreshing="refreshing" @refresh="refresh" />
+          <UpdatedStamp :label="updatedLabel" :refreshing="refreshing" @refresh="refreshNow" />
         </template>
       </WeekCard>
       <figure v-if="chart.points.length" class="block__chart">
@@ -317,7 +218,7 @@ const errorText = computed(() => {
           :points="chart.points"
           :title="chart.title"
           :summary="chart.summary"
-          :boundary-index="view === 'day' ? boundaryIndex : undefined"
+          :boundary-index="chart.boundaryIndex"
           :boundary-label="t('chart.tomorrow')"
         />
       </figure>
@@ -524,90 +425,5 @@ const errorText = computed(() => {
 
 .block__body--refreshing {
   opacity: 0.6;
-}
-
-/* Skeleton mirrors the card and chart so nothing jumps when data arrives. */
-.skeleton {
-  display: grid;
-  align-content: start;
-  gap: var(--space-3);
-}
-
-.skeleton > *,
-.skeleton__now > *,
-.skeleton__grid > * {
-  border-radius: var(--radius-sm);
-  background: linear-gradient(
-    90deg,
-    var(--surface-sunken) 0%,
-    color-mix(in srgb, var(--surface-sunken) 40%, var(--surface-raised)) 50%,
-    var(--surface-sunken) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.2s ease-in-out infinite;
-}
-
-.skeleton__now,
-.skeleton__grid,
-.skeleton > .chart-skeleton {
-  background: none !important;
-  animation: none !important;
-}
-
-.skeleton__line {
-  display: block;
-  height: 14px;
-}
-
-.skeleton__line--title {
-  width: 45%;
-  height: 30px;
-}
-
-.skeleton__line--meta {
-  width: 60%;
-}
-
-.skeleton__now {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  margin-block: var(--space-3);
-}
-
-.skeleton__circle {
-  width: 88px;
-  height: 88px;
-  border-radius: 50% !important;
-}
-
-.skeleton__line--temp {
-  width: 120px;
-  height: 64px;
-}
-
-.skeleton__grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-2);
-}
-
-@media (min-width: 560px) {
-  .skeleton__grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-.skeleton__cell {
-  height: 56px;
-}
-
-@keyframes shimmer {
-  from {
-    background-position: 100% 0;
-  }
-  to {
-    background-position: -100% 0;
-  }
 }
 </style>
