@@ -20,6 +20,12 @@ const themeStore = useThemeStore()
 const favourites = useFavouritesStore()
 const tab = useHashTab()
 
+/** Favourites sits to the right of Home, so it slides in from the right and Home from the left. */
+const panelTransition = ref('tab-forward')
+watch(tab, (next) => {
+  panelTransition.value = next === 'favourites' ? 'tab-forward' : 'tab-back'
+})
+
 /** The favourites tab renders on first visit and then stays mounted, so its blocks fetch only when wanted. */
 const favouritesVisited = ref(tab.value === 'favourites')
 watch(tab, (value) => {
@@ -79,29 +85,33 @@ watchEffect(() => {
         </template>
       </TabBar>
 
-      <section
-        v-show="tab === 'home'"
-        id="panel-home"
-        class="app__panel"
-        role="tabpanel"
-        aria-labelledby="tab-home"
-        tabindex="0"
-      >
-        <h2 class="visually-hidden">{{ t('home.heading') }}</h2>
-        <HomeView />
-      </section>
+      <Transition :name="panelTransition">
+        <section
+          v-show="tab === 'home'"
+          id="panel-home"
+          class="app__panel"
+          role="tabpanel"
+          aria-labelledby="tab-home"
+          tabindex="0"
+        >
+          <h2 class="visually-hidden">{{ t('home.heading') }}</h2>
+          <HomeView />
+        </section>
+      </Transition>
 
-      <section
-        v-show="tab === 'favourites'"
-        id="panel-favourites"
-        class="app__panel"
-        role="tabpanel"
-        aria-labelledby="tab-favourites"
-        tabindex="0"
-      >
-        <h2 class="visually-hidden">{{ t('favourites.heading') }}</h2>
-        <FavouritesView v-if="favouritesVisited" @browse="tab = 'home'" />
-      </section>
+      <Transition :name="panelTransition">
+        <section
+          v-show="tab === 'favourites'"
+          id="panel-favourites"
+          class="app__panel"
+          role="tabpanel"
+          aria-labelledby="tab-favourites"
+          tabindex="0"
+        >
+          <h2 class="visually-hidden">{{ t('favourites.heading') }}</h2>
+          <FavouritesView v-if="favouritesVisited" @browse="tab = 'home'" />
+        </section>
+      </Transition>
     </main>
 
     <AppFooter />
@@ -120,6 +130,29 @@ watchEffect(() => {
 
 .app__main {
   flex: 1;
+}
+
+/* The old panel hides at once; the new one slides 24px and fades in from the side of its tab. */
+.tab-forward-enter-active,
+.tab-back-enter-active {
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-slow) var(--ease-out);
+}
+
+.tab-forward-enter-from {
+  opacity: 0;
+  transform: translateX(24px);
+}
+
+.tab-back-enter-from {
+  opacity: 0;
+  transform: translateX(-24px);
+}
+
+.tab-forward-leave-active,
+.tab-back-leave-active {
+  display: none;
 }
 
 .app__panel {
