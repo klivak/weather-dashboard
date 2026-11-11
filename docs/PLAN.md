@@ -88,7 +88,7 @@ Measured on the production build with mocked APIs (200 ms each), slow 4G, 4x CPU
 
 Lighthouse (mobile, real APIs): Performance 87 → 94, Accessibility 100, Best practices 100, SEO 91 → 100; Total Blocking Time 290 → 90–130 ms.
 
-What changed: static first-paint shell in `index.html`; theme chosen before first paint; Chart.js split into a prefetched chunk, built on an idle frame, with its caption rendered by the block so it paints with the card; IP lookup started from the page head on first visits; preconnect to the third-party APIs; favourites tab mounted on first open; last weather per city and language kept in `localStorage` for up to 3 hours and shown instantly, then refreshed; no forced layout in the tab indicator; `robots.txt`; edge caching of OpenWeatherMap answers.
+What changed: static first-paint shell in `index.html`; entry CSS inlined and the Latin/Cyrillic font files preloaded (first paint 560 → 460 ms); theme chosen before first paint; Chart.js split into a prefetched chunk, built on an idle frame, with its caption rendered by the block so it paints with the card; IP lookup started from the page head on first visits; preconnect to the third-party APIs; favourites tab mounted on first open; last weather per city and language kept in `localStorage` for up to 3 hours and shown instantly, then refreshed; no forced layout in the tab indicator; `robots.txt`; edge caching of OpenWeatherMap answers.
 
 ## Quality bar
 
