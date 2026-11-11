@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue'
-import { KYIV } from '@/api/ipLocation'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { resolveDefaultCity } from '@/api/location'
 import { cityName } from '@/api/models'
 import BaseButton from '@/components/base/BaseButton.vue'
 import ConfirmDialog from '@/components/base/ConfirmDialog.vue'
@@ -40,11 +40,30 @@ function nameOf(block: WeatherBlockState): string {
   return block.city ? cityName(block.city, locale.value) : ''
 }
 
-onMounted(() => {
-  // First visit: show a city right away instead of an empty block. Step 8 replaces this with the visitor's city.
+/** Block waiting for the visitor's city on a first visit. */
+const locatingId = ref<string | null>(null)
+const locateController = new AbortController()
+
+onMounted(async () => {
+  // First visit: fill the default block with the visitor's city (from their IP), falling back to Kyiv.
   const first = store.blocks[0]
-  if (!store.restored && first && !first.city) void store.setCity(first.id, KYIV)
+  if (store.restored || !first || first.city) return
+  locatingId.value = first.id
+  try {
+    const { city, source } = await resolveDefaultCity(locateController.signal)
+    const block = store.blocks.find((item) => item.id === first.id)
+    // The user may have picked a city while we were looking; their choice wins.
+    if (!block || block.city) return
+    await store.setCity(block.id, city)
+    if (source === 'ip') void announce(t('location.detected', { city: cityName(city, locale.value) }))
+  } catch {
+    // Aborted on unmount.
+  } finally {
+    locatingId.value = null
+  }
 })
+
+onBeforeUnmount(() => locateController.abort())
 
 async function add() {
   const block = store.add()
@@ -75,6 +94,7 @@ async function confirmRemove() {
         :city="block.city"
         :label="t('home.blockLabel', { n: index + 1 })"
         :autofocus="block.id === focusId"
+        :locating="block.id === locatingId"
         :favourite="favourites.isFavourite(block.city?.id)"
         @update:city="store.setCity(block.id, $event)"
       >

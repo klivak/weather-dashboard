@@ -9,6 +9,14 @@ vi.mock('@/api/owm', () => ({
   getCurrentWeather: () => new Promise(() => {}),
   getForecast: () => new Promise(() => {}),
 }))
+vi.mock('@/api/location', async () => {
+  const { KYIV } = await import('@/api/ipLocation')
+  return {
+    resolveDefaultCity: () => Promise.resolve({ city: KYIV, source: 'fallback' }),
+    cityFromDevice: () => Promise.reject(new Error('not in tests')),
+    GeolocationError: class extends Error {},
+  }
+})
 
 let wrapper: VueWrapper | undefined
 

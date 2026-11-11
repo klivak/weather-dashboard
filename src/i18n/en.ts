@@ -28,6 +28,15 @@ export const en = {
     results: 'Cities found: {count}. Use the arrow keys to choose.',
     selected: 'Selected: {city}',
   },
+  location: {
+    use: 'Use my location',
+    finding: 'Finding your location…',
+    detecting: 'Finding your city…',
+    denied: 'Location access is blocked. Allow it in your browser settings or search for a city.',
+    unavailable: 'Couldn’t find your location. Search for a city instead.',
+    unsupported: 'This browser can’t share its location. Search for a city instead.',
+    detected: 'Showing the weather for {city}, based on your location.',
+  },
   weather: {
     feelsLike: 'Feels like {temp}',
     highLow: 'H {high} · L {low}',

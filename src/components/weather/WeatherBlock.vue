@@ -26,8 +26,10 @@ const props = withDefaults(
     autofocus?: boolean
     /** Mark the block as a favourite city (gold ring). */
     favourite?: boolean
+    /** The default city is still being detected: show the skeleton instead of the "pick a city" hint. */
+    locating?: boolean
   }>(),
-  { searchable: true, label: undefined, autofocus: false, favourite: false },
+  { searchable: true, label: undefined, autofocus: false, favourite: false, locating: false },
 )
 
 const emit = defineEmits<{ 'update:city': [city: City] }>()
@@ -138,7 +140,9 @@ const chart = computed(() => {
   }
 })
 
-const showSkeleton = computed(() => status.value === 'loading' && !current.value)
+const showSkeleton = computed(
+  () => (status.value === 'loading' && !current.value) || (!props.city && props.locating),
+)
 
 const errorText = computed(() => {
   switch (errorKind.value) {
@@ -178,9 +182,16 @@ const errorText = computed(() => {
       </div>
     </div>
 
-    <p class="visually-hidden" role="status">{{ showSkeleton ? t('weather.loading') : '' }}</p>
+    <p class="visually-hidden" role="status">
+      {{ showSkeleton ? (city ? t('weather.loading') : t('location.detecting')) : '' }}
+    </p>
 
-    <p v-if="!city" class="block__hint">{{ t('weather.pickCity') }}</p>
+    <div v-if="showSkeleton && !city" class="block__detecting">
+      <span class="block__detecting-pulse" aria-hidden="true" />
+      {{ t('location.detecting') }}
+    </div>
+
+    <p v-if="!city && !locating" class="block__hint">{{ t('weather.pickCity') }}</p>
 
     <div v-else-if="status === 'error' && !current" class="block__error" role="alert">
       <p>{{ errorText }}</p>
@@ -273,6 +284,29 @@ const errorText = computed(() => {
   display: flex;
   gap: var(--space-2);
   margin-left: auto;
+}
+
+.block__detecting {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.block__detecting-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.3;
+    transform: scale(0.7);
+  }
 }
 
 .block__hint {

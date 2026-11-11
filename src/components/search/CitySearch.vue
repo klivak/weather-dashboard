@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, useId, useTemplateRef, watch } from 'vue'
+import { cityFromDevice, GeolocationError } from '@/api/location'
 import type { City } from '@/api/models'
 import { cityName } from '@/api/models'
 import BaseSpinner from '@/components/base/BaseSpinner.vue'
 import IconClose from '@/components/icons/IconClose.vue'
+import IconLocate from '@/components/icons/IconLocate.vue'
 import IconPin from '@/components/icons/IconPin.vue'
 import IconSearch from '@/components/icons/IconSearch.vue'
 import { useCitySearch } from '@/composables/useCitySearch'
@@ -34,6 +36,8 @@ const input = useTemplateRef<HTMLInputElement>('input')
 const open = ref(false)
 const activeIndex = ref(-1)
 const announcement = ref('')
+const locating = ref(false)
+const locateError = ref('')
 
 const displayName = computed(() => (props.city ? cityName(props.city, locale.value) : ''))
 
@@ -69,6 +73,23 @@ watch([results, status], () => {
 
 function onInput() {
   open.value = true
+  locateError.value = ''
+}
+
+/** Pick the city at the device's position; errors are shown under the field and announced. */
+async function locateMe() {
+  if (locating.value) return
+  locating.value = true
+  locateError.value = ''
+  try {
+    choose(await cityFromDevice())
+  } catch (error) {
+    const kind = error instanceof GeolocationError ? error.kind : 'unavailable'
+    locateError.value = t(`location.${kind}`)
+    announcement.value = locateError.value
+  } finally {
+    locating.value = false
+  }
 }
 
 function choose(city: City) {
@@ -164,7 +185,7 @@ function onBlur() {
         @focus="onFocus"
         @blur="onBlur"
       />
-      <BaseSpinner v-if="status === 'loading' && open" class="search__spinner" />
+      <BaseSpinner v-if="(status === 'loading' && open) || locating" class="search__spinner" />
       <button
         v-else-if="query && query !== displayName"
         type="button"
@@ -175,7 +196,19 @@ function onBlur() {
       >
         <IconClose :size="18" />
       </button>
+      <button
+        v-else
+        type="button"
+        class="search__clear search__locate"
+        :aria-label="t('location.use')"
+        :title="t('location.use')"
+        @mousedown.prevent
+        @click="locateMe"
+      >
+        <IconLocate :size="18" />
+      </button>
     </div>
+    <p v-if="locateError" class="search__locate-error">{{ locateError }}</p>
 
     <div v-show="showPopup" class="search__popup" @mousedown.prevent>
       <ul
@@ -286,6 +319,16 @@ function onBlur() {
   border: 0;
   border-radius: 50%;
   background: transparent;
+}
+
+.search__clear.search__locate:hover {
+  color: var(--accent);
+}
+
+.search__locate-error {
+  margin-top: var(--space-2);
+  color: var(--danger);
+  font-size: var(--text-xs);
 }
 
 .search__clear:hover {
