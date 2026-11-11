@@ -59,7 +59,7 @@ describe('settings store', () => {
   it('persists locale and theme and restores them', async () => {
     const store = useSettingsStore()
     store.setLocale('uk')
-    store.setTheme('night')
+    store.setThemeMode('night')
     await nextTick()
     expect(JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}')).toEqual({
       v: 1,
@@ -70,18 +70,18 @@ describe('settings store', () => {
     setActivePinia(createPinia())
     const restored = useSettingsStore()
     expect(restored.locale).toBe('uk')
-    expect(restored.theme).toBe('night')
+    expect(restored.themeMode).toBe('night')
   })
 
   it('ignores corrupt or foreign saved data', () => {
     localStorage.setItem(SETTINGS_KEY, '{"v":1,"locale":"de","theme":"blue"}')
     const store = useSettingsStore()
     expect(['en', 'uk']).toContain(store.locale)
-    expect(store.theme).toBe('day')
+    expect(store.themeMode).toBe('auto')
 
     localStorage.setItem(SETTINGS_KEY, 'not json')
     setActivePinia(createPinia())
-    expect(useSettingsStore().theme).toBe('day')
+    expect(useSettingsStore().themeMode).toBe('auto')
   })
 
   it('useI18n follows the store locale', () => {
