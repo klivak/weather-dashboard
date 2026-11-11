@@ -26,13 +26,13 @@
 }
 
 .chart-skeleton__plot {
-  height: 220px;
+  height: 270px;
   border-radius: var(--radius-md);
 }
 
 @media (min-width: 1024px) {
   .chart-skeleton__plot {
-    height: 260px;
+    height: 310px;
   }
 }
 

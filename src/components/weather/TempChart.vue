@@ -12,10 +12,11 @@ import {
   type ChartDataset,
   type Plugin,
 } from 'chart.js'
-import { computed, nextTick, onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from '@/i18n'
 import { useThemeStore } from '@/stores/theme'
 import { formatTemp } from '@/utils/format'
+import WeatherIcon from './WeatherIcon.vue'
 
 export interface ChartPoint {
   /** Axis label, e.g. "14:00" or "Thu". */
@@ -28,6 +29,10 @@ export interface ChartPoint {
   max?: number
   /** Emphasised point, e.g. the live reading. */
   highlight?: boolean
+  /** Weather icon shown under the point. */
+  icon?: { code: number; day: boolean }
+  /** Chance of precipitation 0..1, shown under the icon from 10%. */
+  pop?: number
 }
 
 const props = defineProps<{
@@ -47,6 +52,10 @@ const { t } = useI18n()
 const themeStore = useThemeStore()
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
 let chart: Chart<'line', number[], string> | undefined
+
+const hasIcons = computed(() => props.points.some((point) => point.icon))
+/** Horizontal insets of the plot area, so the icon strip lines up with the points. */
+const plotInset = ref({ left: 8, right: 8 })
 
 const hasRange = computed(() =>
   props.points.some((point) => point.min !== undefined && point.max !== undefined),
@@ -92,6 +101,16 @@ const dayBoundary: Plugin<'line'> = {
       ctx.fillText(props.boundaryLabel, x + 6, chartArea.top + 2)
     }
     ctx.restore()
+  },
+}
+
+/** Reports where the plot area sits after every layout (first render and resizes). */
+const trackPlotArea: Plugin<'line'> = {
+  id: 'trackPlotArea',
+  afterLayout(target) {
+    const left = Math.round(target.chartArea.left)
+    const right = Math.round(target.width - target.chartArea.right)
+    if (left !== plotInset.value.left || right !== plotInset.value.right) plotInset.value = { left, right }
   },
 }
 
@@ -176,6 +195,8 @@ function buildConfig(): ChartConfiguration<'line', number[], string> {
       interaction: { mode: 'index', intersect: false },
       scales: {
         x: {
+          // Each point sits in the middle of an equal band, the same grid the icon strip below uses.
+          offset: true,
           grid: { display: false },
           border: { display: false },
           ticks: { color: c.text, font: { family: c.font, size: 12 }, maxRotation: 0, autoSkipPadding: 10 },
@@ -213,7 +234,7 @@ function buildConfig(): ChartConfiguration<'line', number[], string> {
         },
       },
     },
-    plugins: [dayBoundary, valueLabels],
+    plugins: [trackPlotArea, dayBoundary, valueLabels],
   }
 }
 
@@ -243,6 +264,23 @@ watch(
     <div class="chart__canvas">
       <canvas ref="canvas" role="img" :aria-label="summary" />
     </div>
+    <ol
+      v-if="hasIcons"
+      class="chart__strip"
+      aria-hidden="true"
+      :style="{
+        paddingLeft: `${plotInset.left}px`,
+        paddingRight: `${plotInset.right}px`,
+        gridTemplateColumns: `repeat(${points.length}, minmax(0, 1fr))`,
+      }"
+    >
+      <li v-for="point in points" :key="point.title" class="chart__slot">
+        <WeatherIcon v-if="point.icon" :code="point.icon.code" :day="point.icon.day" :size="26" />
+        <span class="chart__pop">{{
+          point.pop !== undefined && point.pop >= 0.1 ? `${Math.round(point.pop * 100)}%` : ''
+        }}</span>
+      </li>
+    </ol>
     <table class="visually-hidden">
       <caption>
         {{
@@ -273,6 +311,28 @@ watch(
 <style scoped>
 .chart {
   min-width: 0;
+}
+
+.chart__strip {
+  display: grid;
+  margin: var(--space-1) 0 0;
+  padding-block: 0;
+  list-style: none;
+}
+
+.chart__slot {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.chart__pop {
+  min-height: 1.2em;
+  color: var(--icon-rain);
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
 }
 
 .chart__canvas {

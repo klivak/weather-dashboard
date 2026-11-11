@@ -62,7 +62,14 @@ describe('localDateKey', () => {
 describe('todaySeries', () => {
   it('starts with the live reading and keeps the rest of the local day', () => {
     const series = todaySeries(current(MIDNIGHT + 8 * HOUR, 3.4), forecast)
-    expect(series[0]).toEqual({ dt: MIDNIGHT + 8 * HOUR, temp: 3.4, now: true, nextDay: false })
+    expect(series[0]).toMatchObject({
+      dt: MIDNIGHT + 8 * HOUR,
+      temp: 3.4,
+      now: true,
+      nextDay: false,
+      isDay: true,
+    })
+    expect(series[1]).toMatchObject({ pop: 0, condition: { id: 800 } })
     // Points at 10, 13, 16, 19, 22 h local remain today, which is enough: nothing from tomorrow.
     expect(series.map((p) => formatTime(p.dt, KYIV_TZ, 'en'))).toEqual([
       '08:00',

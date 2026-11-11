@@ -15,6 +15,10 @@ export interface TempPoint {
   now: boolean
   /** The point belongs to the next local day (only late in the evening). */
   nextDay: boolean
+  condition: Condition
+  isDay: boolean
+  /** Chance of precipitation 0..1; unknown for the live reading. */
+  pop?: number
 }
 
 /** YYYY-MM-DD of a moment in a city whose offset from UTC is `timezone` seconds. */
@@ -35,15 +39,33 @@ export function todaySeries(
 ): TempPoint[] {
   const today = localDateKey(current.dt, current.timezone)
   const upcoming = forecast.points.filter((point) => point.dt > current.dt)
-  const series: TempPoint[] = [{ dt: current.dt, temp: current.temp, now: true, nextDay: false }]
+  const toPoint = (point: ForecastPoint, nextDay: boolean): TempPoint => ({
+    dt: point.dt,
+    temp: point.temp,
+    now: false,
+    nextDay,
+    condition: point.condition,
+    isDay: point.isDay,
+    pop: point.pop,
+  })
+  const series: TempPoint[] = [
+    {
+      dt: current.dt,
+      temp: current.temp,
+      now: true,
+      nextDay: false,
+      condition: current.condition,
+      isDay: !current.condition.icon.endsWith('n'),
+    },
+  ]
   for (const point of upcoming) {
     if (localDateKey(point.dt, forecast.timezone) !== today) break
-    series.push({ dt: point.dt, temp: point.temp, now: false, nextDay: false })
+    series.push(toPoint(point, false))
   }
   if (series.length >= minPoints) return series
   for (const point of upcoming.slice(series.length - 1, upcoming.length)) {
     if (series.length >= extendTo) break
-    series.push({ dt: point.dt, temp: point.temp, now: false, nextDay: true })
+    series.push(toPoint(point, true))
   }
   return series
 }

@@ -94,6 +94,8 @@ const dayPoints = computed<ChartPoint[]>(() =>
       title: `${formatDayDate(point.dt, timezone.value, locale.value)}, ${time}`,
       value: point.temp,
       highlight: point.now,
+      icon: { code: point.condition.id, day: point.isDay },
+      pop: point.pop,
     }
   }),
 )
@@ -107,6 +109,8 @@ const weekPoints = computed<ChartPoint[]>(() =>
     min: day.min,
     max: day.max,
     highlight: day.date === today.value,
+    icon: { code: day.condition.id, day: true },
+    pop: day.pop,
   })),
 )
 
