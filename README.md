@@ -23,8 +23,11 @@ Built with Vue 3, TypeScript, Pinia and Chart.js. All styling is hand-written CS
 - **Micro-interactions:** the today card's weather icon is alive (sun rays turn, clouds drift, rain and snow fall, lightning flickers), cards rise in when data arrives, the temperature counts up to each new reading and the 5-day rows slide in one by one. All of it stops under `prefers-reduced-motion`.
 - **Richer chart:** a weather icon and the chance of precipitation under every point, aligned with the plot.
 - **Toasts with Undo:** visible feedback for favourites, an Open shortcut after starring and an Undo after removing a block (the confirmation modal stays) or a favourite.
-- **"Updated 5 min ago"** under each block with a refresh button that bypasses every cache, including the edge.
+- **"Updated 5 min ago"** in each card header with a refresh button that bypasses every cache, including the edge.
 - **Popular cities** as one-click chips in an empty block.
+- **°C / °F switch** in the header (with mph and miles), saved with the other settings.
+- **Reorder blocks** from each block's actions menu (an accessible menu button), with a sliding animation.
+- **Jump bar on phones:** a sticky row of city chips under the tabs scrolls to a block and follows the one in view.
 - **Use my location:** a button in the search field picks the city at the device position (browser geolocation), with clear messages when permission is blocked.
 - **The API key never reaches the browser:** requests go through an allow-listed proxy (Vite in development, a Cloudflare Pages Function in production) that adds the key server-side.
 - **Everything persists:** blocks, chosen cities, favourites, language and look survive a reload; corrupted storage is ignored safely.
