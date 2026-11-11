@@ -4,20 +4,24 @@ import { KYIV } from '@/api/ipLocation'
 import { cityName } from '@/api/models'
 import BaseButton from '@/components/base/BaseButton.vue'
 import ConfirmDialog from '@/components/base/ConfirmDialog.vue'
+import FavouriteButton from '@/components/favourites/FavouriteButton.vue'
 import IconPlus from '@/components/icons/IconPlus.vue'
 import IconTrash from '@/components/icons/IconTrash.vue'
 import WeatherBlock from '@/components/weather/WeatherBlock.vue'
+import { useAnnouncer } from '@/composables/useAnnouncer'
 import { MAX_BLOCKS } from '@/domain/limits'
 import { useI18n } from '@/i18n'
 import { useBlocksStore, type WeatherBlockState } from '@/stores/blocks'
+import { useFavouritesStore } from '@/stores/favourites'
 
 const { t, locale } = useI18n()
 const store = useBlocksStore()
+const favourites = useFavouritesStore()
+const { announce } = useAnnouncer()
 
 /** The block that was just added gets its search focused. */
 const focusId = ref<string | null>(null)
 const pendingRemoval = ref<WeatherBlockState | null>(null)
-const announcement = ref('')
 const list = ref<{ $el: HTMLElement } | null>(null)
 const addButton = ref<HTMLButtonElement | null>(null)
 
@@ -55,7 +59,7 @@ async function confirmRemove() {
   if (!block) return
   const name = nameOf(block)
   store.remove(block.id)
-  announcement.value = name ? t('home.removed', { city: name }) : ''
+  if (name) void announce(t('home.removed', { city: name }))
   await nextTick()
   // The removed block's button is gone, so give focus a sensible place to land.
   addButton.value?.focus()
@@ -71,10 +75,13 @@ async function confirmRemove() {
         :city="block.city"
         :label="t('home.blockLabel', { n: index + 1 })"
         :autofocus="block.id === focusId"
+        :favourite="favourites.isFavourite(block.city?.id)"
         @update:city="store.setCity(block.id, $event)"
       >
-        <template v-if="store.canRemove" #actions>
+        <template v-if="block.city || store.canRemove" #actions>
+          <FavouriteButton v-if="block.city" :city="block.city" />
           <BaseButton
+            v-if="store.canRemove"
             icon-only
             :aria-label="nameOf(block) ? t('home.remove', { city: nameOf(block) }) : t('home.removeEmpty')"
             :title="nameOf(block) ? t('home.remove', { city: nameOf(block) }) : t('home.removeEmpty')"
@@ -99,8 +106,6 @@ async function confirmRemove() {
         </span>
       </button>
     </div>
-
-    <p class="home__status visually-hidden" role="status">{{ announcement }}</p>
 
     <ConfirmDialog
       v-model:open="confirmOpen"

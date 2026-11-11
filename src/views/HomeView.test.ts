@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import type { City } from '@/api/models'
+import { useAnnouncer } from '@/composables/useAnnouncer'
 import { useBlocksStore } from '@/stores/blocks'
 import { useSettingsStore } from '@/stores/settings'
 import HomeView from './HomeView.vue'
@@ -107,7 +108,7 @@ describe('HomeView', () => {
     await flushPromises()
 
     expect(store.blocks.map((block) => block.city?.name)).toEqual(['Kyiv'])
-    expect(home.find('.home__status').text()).toBe('Lviv removed')
+    expect(useAnnouncer().message.value).toBe('Lviv removed')
     expect(document.activeElement).toBe(addButton(home).element)
     expect(home.find('[aria-label^="Remove"]').exists()).toBe(false)
   })

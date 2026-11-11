@@ -19,8 +19,10 @@ const props = withDefaults(
     label?: string
     /** Focus the search field on mount (a block the user just added). */
     autofocus?: boolean
+    /** Mark the block as a favourite city (gold ring). */
+    favourite?: boolean
   }>(),
-  { searchable: true, label: undefined, autofocus: false },
+  { searchable: true, label: undefined, autofocus: false, favourite: false },
 )
 
 const emit = defineEmits<{ 'update:city': [city: City] }>()
@@ -62,7 +64,12 @@ const errorText = computed(() => {
 </script>
 
 <template>
-  <section class="block" :aria-busy="status === 'loading'" :aria-label="name || label">
+  <section
+    class="block"
+    :class="{ 'block--favourite': favourite }"
+    :aria-busy="status === 'loading'"
+    :aria-label="name || label"
+  >
     <div v-if="searchable || $slots.actions" class="block__toolbar">
       <div v-if="searchable" class="block__search">
         <CitySearch :city="city" :autofocus="autofocus" @select="emit('update:city', $event)" />
@@ -130,6 +137,13 @@ const errorText = computed(() => {
   .block {
     padding: var(--space-6);
   }
+}
+
+.block--favourite {
+  border-color: color-mix(in srgb, var(--fav) 70%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--fav) 70%, transparent),
+    var(--shadow-1);
 }
 
 .block__toolbar {

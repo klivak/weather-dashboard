@@ -1,25 +1,27 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
-import EmptyState from '@/components/base/EmptyState.vue'
-import BaseButton from '@/components/base/BaseButton.vue'
 import TabBar from '@/components/base/TabBar.vue'
 import IconHome from '@/components/icons/IconHome.vue'
 import IconStar from '@/components/icons/IconStar.vue'
+import FavouritesLimitDialog from '@/components/favourites/FavouritesLimitDialog.vue'
+import AppAnnouncer from '@/components/layout/AppAnnouncer.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import { useHashTab, type TabId } from '@/composables/useHashTab'
-import { MAX_FAVOURITES } from '@/domain/limits'
 import { useI18n } from '@/i18n'
+import { useFavouritesStore } from '@/stores/favourites'
 import { useSettingsStore } from '@/stores/settings'
+import FavouritesView from '@/views/FavouritesView.vue'
 import HomeView from '@/views/HomeView.vue'
 
 const { t, locale } = useI18n()
 const settings = useSettingsStore()
+const favourites = useFavouritesStore()
 const tab = useHashTab()
 
 const tabs = computed(() => [
   { id: 'home' as TabId, label: t('nav.home') },
-  { id: 'favourites' as TabId, label: t('nav.favourites') },
+  { id: 'favourites' as TabId, label: t('nav.favourites'), badge: favourites.cities.length },
 ])
 
 watchEffect(() => {
@@ -64,19 +66,13 @@ watchEffect(() => {
         tabindex="0"
       >
         <h2 class="visually-hidden">{{ t('favourites.heading') }}</h2>
-        <EmptyState
-          :title="t('favourites.emptyTitle')"
-          :text="t('favourites.emptyText', { max: MAX_FAVOURITES })"
-        >
-          <template #icon><IconStar :size="28" /></template>
-          <template #action>
-            <BaseButton variant="primary" @click="tab = 'home'">{{ t('favourites.emptyAction') }}</BaseButton>
-          </template>
-        </EmptyState>
+        <FavouritesView @browse="tab = 'home'" />
       </section>
     </main>
 
     <AppFooter />
+    <FavouritesLimitDialog />
+    <AppAnnouncer />
   </div>
 </template>
 
