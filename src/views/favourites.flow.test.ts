@@ -5,6 +5,7 @@ import { nextTick } from 'vue'
 import type { City } from '@/api/models'
 import App from '@/App.vue'
 import { useAnnouncer } from '@/composables/useAnnouncer'
+import { useToasts } from '@/composables/useToasts'
 import { FAVOURITES_KEY, useFavouritesStore } from '@/stores/favourites'
 
 vi.mock('@/api/owm', () => ({
@@ -66,7 +67,7 @@ describe('favourites flow', () => {
     expect(star.attributes('aria-pressed')).toBe('true')
     expect(star.attributes('aria-label')).toBe('Remove Kyiv from favourites')
     expect(homeBlock(app).classes()).toContain('block--favourite')
-    expect(useAnnouncer().message.value).toBe('Kyiv added to favourites')
+    expect(useAnnouncer().message.value).toBe('Kyiv added to favourites. Open?')
     expect(app.find('#tab-favourites').text()).toContain('1')
     expect(JSON.parse(localStorage.getItem(FAVOURITES_KEY)!).cities[0].name).toBe('Kyiv')
 
@@ -140,5 +141,22 @@ describe('favourites tab loading', () => {
 
     await app.find('#tab-home').trigger('click')
     expect(favouritesPanel(app).find('section.block').exists()).toBe(true)
+  })
+})
+
+describe('favourites toasts', () => {
+  it('offers Undo after removing a favourite', async () => {
+    localStorage.setItem(FAVOURITES_KEY, JSON.stringify({ v: 1, cities: [city(1)] }))
+    const app = await mountApp()
+    await app.find('#tab-favourites').trigger('click')
+    await flushPromises()
+    await favouritesPanel(app).find('[aria-label="Remove City 1 from favourites"]').trigger('click')
+    expect(useFavouritesStore().cities).toHaveLength(0)
+
+    const { toasts, runAction } = useToasts()
+    const toast = toasts.value.at(-1)!
+    expect(toast.action?.label).toBe('Undo')
+    runAction(toast)
+    expect(useFavouritesStore().cities.map((c) => c.id)).toEqual(['c1'])
   })
 })

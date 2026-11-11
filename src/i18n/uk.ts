@@ -124,6 +124,9 @@ export const uk: Messages = {
     confirmAction: 'Видалити',
     cancel: 'Скасувати',
     removed: '{city}: видалено',
+    removedEmpty: 'Порожній блок видалено',
+    restored: '{city}: повернуто',
+    restoredEmpty: 'Блок повернуто',
   },
   favourites: {
     heading: 'Вибрані міста',
@@ -140,6 +143,12 @@ export const uk: Messages = {
     emptyTitle: 'Тут поки порожньо',
     emptyText: 'Натисніть зірочку біля міста, щоб зберегти його тут. Можна зберегти до {max} міст.',
     emptyAction: 'Знайти місто',
+  },
+  toast: {
+    region: 'Сповіщення',
+    undo: 'Повернути',
+    open: 'Відкрити',
+    close: 'Закрити сповіщення',
   },
   footer: {
     data: 'Дані про погоду',

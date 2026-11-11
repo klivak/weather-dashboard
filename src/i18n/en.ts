@@ -120,6 +120,9 @@ export const en = {
     confirmAction: 'Remove',
     cancel: 'Cancel',
     removed: '{city} removed',
+    removedEmpty: 'Empty block removed',
+    restored: '{city} is back',
+    restoredEmpty: 'Block is back',
   },
   favourites: {
     heading: 'Favourite cities',
@@ -136,6 +139,12 @@ export const en = {
     emptyTitle: 'No favourites yet',
     emptyText: 'Tap the star on any city to keep it here. You can save up to {max} cities.',
     emptyAction: 'Find a city',
+  },
+  toast: {
+    region: 'Notifications',
+    undo: 'Undo',
+    open: 'Open',
+    close: 'Dismiss notification',
   },
   footer: {
     data: 'Weather data',

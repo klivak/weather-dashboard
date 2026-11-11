@@ -9,6 +9,7 @@ import IconPlus from '@/components/icons/IconPlus.vue'
 import IconTrash from '@/components/icons/IconTrash.vue'
 import WeatherBlock from '@/components/weather/WeatherBlock.vue'
 import { useAnnouncer } from '@/composables/useAnnouncer'
+import { useToasts } from '@/composables/useToasts'
 import { MAX_BLOCKS } from '@/domain/limits'
 import { useI18n } from '@/i18n'
 import { useBlocksStore, type WeatherBlockState } from '@/stores/blocks'
@@ -18,6 +19,7 @@ const { t, locale } = useI18n()
 const store = useBlocksStore()
 const favourites = useFavouritesStore()
 const { announce } = useAnnouncer()
+const { show: showToast } = useToasts()
 
 /** The block that was just added gets its search focused. */
 const focusId = ref<string | null>(null)
@@ -77,8 +79,20 @@ async function confirmRemove() {
   const block = pendingRemoval.value
   if (!block) return
   const name = nameOf(block)
+  const index = store.blocks.findIndex((item) => item.id === block.id)
   store.remove(block.id)
-  if (name) void announce(t('home.removed', { city: name }))
+  showToast(name ? t('home.removed', { city: name }) : t('home.removedEmpty'), {
+    icon: 'trash',
+    action: {
+      label: t('toast.undo'),
+      run: () => {
+        if (!store.restore(block, index)) return
+        // The restored block mounts with focus in its search field.
+        focusId.value = block.id
+        void announce(name ? t('home.restored', { city: name }) : t('home.restoredEmpty'))
+      },
+    },
+  })
   await nextTick()
   // The removed block's button is gone, so give focus a sensible place to land.
   addButton.value?.focus()

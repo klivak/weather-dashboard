@@ -5,6 +5,7 @@ import IconHome from '@/components/icons/IconHome.vue'
 import IconStar from '@/components/icons/IconStar.vue'
 import FavouritesLimitDialog from '@/components/favourites/FavouritesLimitDialog.vue'
 import AppAnnouncer from '@/components/layout/AppAnnouncer.vue'
+import ToastHost from '@/components/layout/ToastHost.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import { useHashTab, type TabId } from '@/composables/useHashTab'
@@ -105,6 +106,7 @@ watchEffect(() => {
 
     <AppFooter />
     <FavouritesLimitDialog />
+    <ToastHost />
     <AppAnnouncer />
   </div>
 </template>

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import type { City } from '@/api/models'
 import { useAnnouncer } from '@/composables/useAnnouncer'
+import { useToasts } from '@/composables/useToasts'
 import { useBlocksStore } from '@/stores/blocks'
 import { useSettingsStore } from '@/stores/settings'
 import HomeView from './HomeView.vue'
@@ -112,7 +113,7 @@ describe('HomeView', () => {
     await flushPromises()
 
     expect(store.blocks.map((block) => block.city?.name)).toEqual(['Kyiv'])
-    expect(useAnnouncer().message.value).toBe('Lviv removed')
+    expect(useAnnouncer().message.value).toBe('Lviv removed. Undo?')
     expect(document.activeElement).toBe(addButton(home).element)
     expect(home.find('[aria-label^="Remove"]').exists()).toBe(false)
   })
@@ -175,5 +176,32 @@ describe('HomeView default city', () => {
     mountHome()
     await flushPromises()
     expect(location.resolveDefaultCity).not.toHaveBeenCalled()
+  })
+})
+
+describe('HomeView undo', () => {
+  it('brings a removed block back to its place from the toast', async () => {
+    const home = mountHome()
+    await flushPromises()
+    const store = useBlocksStore()
+    store.add()
+    await store.setCity(store.blocks[1]!.id, lviv)
+    store.add()
+    await nextTick()
+    const ids = store.blocks.map((block) => block.id)
+
+    await home.find('[aria-label="Remove Lviv"]').trigger('click')
+    dialogButton('Remove').click()
+    await flushPromises()
+    expect(store.blocks).toHaveLength(2)
+
+    const { toasts, runAction } = useToasts()
+    const toast = toasts.value.at(-1)!
+    expect(toast.message).toBe('Lviv removed')
+    expect(toast.action?.label).toBe('Undo')
+    runAction(toast)
+    await flushPromises()
+    expect(store.blocks.map((block) => block.id)).toEqual(ids)
+    expect(useAnnouncer().message.value).toBe('Lviv is back')
   })
 })

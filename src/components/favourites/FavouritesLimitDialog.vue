@@ -4,7 +4,7 @@ import type { City } from '@/api/models'
 import { cityName } from '@/api/models'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseModal from '@/components/base/BaseModal.vue'
-import { useAnnouncer } from '@/composables/useAnnouncer'
+import { useToasts } from '@/composables/useToasts'
 import { MAX_FAVOURITES } from '@/domain/limits'
 import { useI18n } from '@/i18n'
 import { useFavouritesStore } from '@/stores/favourites'
@@ -13,7 +13,7 @@ import { cityRegion } from '@/utils/region'
 /** Opens when a city is starred while favourites are full and lets the user pick which saved city to drop. */
 const { t, locale } = useI18n()
 const favourites = useFavouritesStore()
-const { announce } = useAnnouncer()
+const { show: showToast } = useToasts()
 
 const open = computed({
   get: () => favourites.pending !== null,
@@ -27,7 +27,7 @@ const pendingName = computed(() => (favourites.pending ? cityName(favourites.pen
 function swap(city: City) {
   const removed = cityName(city, locale.value)
   const added = pendingName.value
-  if (favourites.replace(city.id)) void announce(t('favourites.replaced', { removed, added }))
+  if (favourites.replace(city.id)) showToast(t('favourites.replaced', { removed, added }), { icon: 'star' })
 }
 </script>
 

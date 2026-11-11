@@ -71,6 +71,13 @@ export const useBlocksStore = defineStore('blocks', () => {
     return true
   }
 
+  /** Undo a removal: put the block back at its old position (if there is still room). */
+  function restore(block: WeatherBlockState, index: number): boolean {
+    if (!canAdd.value || blocks.value.some((item) => item.id === block.id)) return false
+    blocks.value.splice(Math.min(index, blocks.value.length), 0, block)
+    return true
+  }
+
   /** Show a city in a block, then quietly add its name in the other language when it is missing. */
   async function setCity(id: string, city: City) {
     const block = blocks.value.find((item) => item.id === id)
@@ -90,5 +97,5 @@ export const useBlocksStore = defineStore('blocks', () => {
     deep: true,
   })
 
-  return { blocks, canAdd, canRemove, restored, add, remove, setCity, setView }
+  return { blocks, canAdd, canRemove, restored, add, remove, restore, setCity, setView }
 })

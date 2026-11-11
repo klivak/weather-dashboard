@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import type { City } from '@/api/models'
 import { cityName } from '@/api/models'
 import IconStar from '@/components/icons/IconStar.vue'
-import { useAnnouncer } from '@/composables/useAnnouncer'
+import { useToasts } from '@/composables/useToasts'
 import { useI18n } from '@/i18n'
 import { useFavouritesStore } from '@/stores/favourites'
 
@@ -11,7 +11,7 @@ const props = defineProps<{ city: City }>()
 
 const { t, locale } = useI18n()
 const favourites = useFavouritesStore()
-const { announce } = useAnnouncer()
+const { show: showToast } = useToasts()
 
 const name = computed(() => cityName(props.city, locale.value))
 const active = computed(() => favourites.isFavourite(props.city.id))
@@ -21,8 +21,20 @@ const label = computed(() =>
 
 function toggle() {
   const result = favourites.toggle(props.city)
-  if (result === 'added') void announce(t('favourites.added', { city: name.value }))
-  if (result === 'removed') void announce(t('favourites.removed', { city: name.value }))
+  const city = props.city
+  const cityLabel = name.value
+  if (result === 'added') {
+    showToast(t('favourites.added', { city: cityLabel }), {
+      icon: 'star',
+      action: { label: t('toast.open'), run: () => (location.hash = '#/favourites') },
+    })
+  }
+  if (result === 'removed') {
+    showToast(t('favourites.removed', { city: cityLabel }), {
+      icon: 'star',
+      action: { label: t('toast.undo'), run: () => favourites.add(city) },
+    })
+  }
   // 'full' opens the limit dialog, which speaks for itself.
 }
 </script>
