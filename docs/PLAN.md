@@ -70,6 +70,21 @@ Decisions:
 - **State:** Pinia stores, persisted keys `wd:blocks`, `wd:favourites`, `wd:settings` with versioned schemas and safe parsing.
 - **Caching:** in-memory per `(endpoint, lat, lon, lang)` for 10 minutes; in-flight requests are deduplicated; stale responses are dropped with `AbortController`.
 
+## Performance
+
+Measured on the production build with mocked APIs (200 ms each), slow 4G, 4x CPU slowdown, 360px, median of 3:
+
+| Metric                                          | Before | After                                          |
+| ----------------------------------------------- | ------ | ---------------------------------------------- |
+| Main JS (gzip)                                  | 113 KB | 57 KB (+57 KB chart chunk, loaded in parallel) |
+| First contentful paint                          | 1.7 s  | 0.6 s                                          |
+| Card visible, first visit                       | 2.9 s  | 2.2–2.5 s                                      |
+| Card visible, returning visit                   | 2.7 s  | 2.2–2.6 s                                      |
+| API requests, returning visit with 3 favourites | 6      | 2                                              |
+| Cumulative layout shift                         | –      | ≤ 0.01                                         |
+
+What changed: static first-paint shell in `index.html`; theme chosen before first paint; Chart.js split into a prefetched chunk; IP lookup started from the page head on first visits; preconnect to the third-party APIs; favourites tab mounted on first open; edge caching of OpenWeatherMap answers.
+
 ## Quality bar
 
 - TypeScript strict with `noUncheckedIndexedAccess`; no `any`.
