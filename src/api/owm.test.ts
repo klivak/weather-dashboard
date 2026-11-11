@@ -167,8 +167,8 @@ describe('weather', () => {
 describe('locateByIp', () => {
   it('uses the first provider that answers and caches the result for the session', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ latitude: '49.84', longitude: '24.03', city: 'Lviv' }))
-    await expect(locateByIp()).resolves.toEqual({ lat: 49.84, lon: 24.03 })
-    await expect(locateByIp()).resolves.toEqual({ lat: 49.84, lon: 24.03 })
+    await expect(locateByIp()).resolves.toEqual({ lat: 49.84, lon: 24.03, city: 'Lviv' })
+    await expect(locateByIp()).resolves.toEqual({ lat: 49.84, lon: 24.03, city: 'Lviv' })
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 

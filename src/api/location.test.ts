@@ -5,12 +5,13 @@ import { KYIV } from './ipLocation'
 import { cityFromDevice, GeolocationError, resolveDefaultCity } from './location'
 import type { City } from './models'
 
-const mocks = vi.hoisted(() => ({ locateByIp: vi.fn(), reverseGeocode: vi.fn() }))
+const mocks = vi.hoisted(() => ({ locateByIp: vi.fn(), reverseGeocode: vi.fn(), searchPlaces: vi.fn() }))
 vi.mock('./ipLocation', async (importOriginal) => ({
   ...(await importOriginal<typeof IpLocationModule>()),
   locateByIp: mocks.locateByIp,
 }))
 vi.mock('./owm', () => ({ reverseGeocode: mocks.reverseGeocode }))
+vi.mock('./geocoding', () => ({ searchPlaces: mocks.searchPlaces }))
 
 const lviv: City = {
   id: 'l',
@@ -24,6 +25,7 @@ const lviv: City = {
 beforeEach(() => {
   mocks.locateByIp.mockReset()
   mocks.reverseGeocode.mockReset()
+  mocks.searchPlaces.mockReset().mockResolvedValue([])
 })
 
 afterEach(() => {
@@ -31,6 +33,23 @@ afterEach(() => {
 })
 
 describe('resolveDefaultCity', () => {
+  it('prefers the city the IP service names, matched near the reported point', async () => {
+    const kyiv = { ...lviv, id: 'k', name: 'Kyiv', names: { en: 'Kyiv', uk: 'Київ' }, lat: 50.45, lon: 30.52 }
+    const kyivUs = { ...kyiv, id: 'us', lat: 48.25, lon: -101.5 }
+    mocks.locateByIp.mockResolvedValue({ lat: 50.458, lon: 30.53, city: 'Kyiv' })
+    mocks.searchPlaces.mockResolvedValue([kyivUs, kyiv])
+    await expect(resolveDefaultCity()).resolves.toEqual({ city: kyiv, source: 'ip' })
+    expect(mocks.searchPlaces).toHaveBeenCalledWith('Kyiv', 'en', undefined)
+    expect(mocks.reverseGeocode).not.toHaveBeenCalled()
+  })
+
+  it('reverse-geocodes the point when the named city is not nearby', async () => {
+    mocks.locateByIp.mockResolvedValue({ lat: 49.84, lon: 24.03, city: 'Springfield' })
+    mocks.searchPlaces.mockResolvedValue([{ ...lviv, id: 's', lat: 39.8, lon: -89.6 }])
+    mocks.reverseGeocode.mockResolvedValue(lviv)
+    await expect(resolveDefaultCity()).resolves.toEqual({ city: lviv, source: 'ip' })
+  })
+
   it('names the IP location with reverse geocoding', async () => {
     mocks.locateByIp.mockResolvedValue({ lat: 49.84, lon: 24.03 })
     mocks.reverseGeocode.mockResolvedValue(lviv)
