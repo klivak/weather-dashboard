@@ -4,7 +4,7 @@ Compare the weather in up to five cities side by side: current conditions, an ho
 
 ## Status
 
-Current step: **8 — Default city from IP**. Each step ends green on `npm run check` and with its own commits.
+Current step: **9 — Day / night look**. Each step ends green on `npm run check` and with its own commits.
 
 | #   | Step                                               | State |
 | --- | -------------------------------------------------- | ----- |
@@ -16,8 +16,8 @@ Current step: **8 — Default city from IP**. Each step ends green on `npm run c
 | 5   | Multiple blocks (+, max 5, delete with confirm)    | done  |
 | 6   | Favourites tab (localStorage, max 5, limit modal)  | done  |
 | 7   | Day / 5-day switch                                 | done  |
-| 8   | Default city from IP                               | next  |
-| 9   | Day / night look                                   |       |
+| 8   | Default city from IP                               | done  |
+| 9   | Day / night look                                   | next  |
 | 10  | Polish: a11y, responsive 360–1200, e2e, README     |       |
 | 11  | Deploy to Cloudflare Pages                         |       |
 
@@ -64,7 +64,8 @@ Decisions:
 - **City autocomplete (Open-Meteo geocoding):** OpenWeatherMap's geocoder only matches whole names ("Lond" does not find London), so suggestions come from Open-Meteo's free, key-less prefix search: queried in the script the user types (Cyrillic → Ukrainian), with the other language fetched in parallel so each city has both names; districts and abandoned places filtered out; OpenWeatherMap `geo/1.0/direct` is the fallback when Open-Meteo is down or finds nothing.
 - **Hourly chart for today** = the live reading plus the forecast points left in the city's local day (3-hour steps, shifted by `timezone`); late in the day it continues into tomorrow until it has 8 points and is titled "Next 24 hours" instead of "Temperature today".
 - **5-day view** groups forecast points by the city's local date; mean, min and max temperature per day; the icon is the most frequent daytime condition.
-- **IP lookup:** `get.geojs.io` → `ipapi.co` → Kyiv fallback; cached for the session.
+- **Default city:** first visit only (a restored layout is left alone): `get.geojs.io` → `ipapi.co` give a rough point and a city name; the name is matched in the geocoder to the place nearest the point (reverse geocoding the point itself returned villages next to the city), reverse geocoding is the fallback, Kyiv when everything fails or is blocked. The block shows "Finding your city…" meanwhile and a city the user picks in the meantime wins. Cached for the session.
+- **Use my location (extra):** a button in the search field asks the browser for the device position and reverse-geocodes it; blocked permission and failures are explained under the field.
 - **Day / night:** `auto` follows the selected city's sunrise/sunset; manual `day` / `night` override; saved in `localStorage`.
 - **State:** Pinia stores, persisted keys `wd:blocks`, `wd:favourites`, `wd:settings` with versioned schemas and safe parsing.
 - **Caching:** in-memory per `(endpoint, lat, lon, lang)` for 10 minutes; in-flight requests are deduplicated; stale responses are dropped with `AbortController`.
