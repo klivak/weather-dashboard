@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
+import { readFileSync } from 'node:fs'
 import { mockApis } from './fixtures.ts'
 
 async function expectNoA11yViolations(page: Page) {
@@ -99,4 +100,24 @@ test('the page never scrolls sideways', async ({ page }) => {
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   )
   expect(overflow).toBeLessThanOrEqual(0)
+})
+
+test('runs under the production Content-Security-Policy without violations', async ({ page }) => {
+  const csp = readFileSync('dist/_headers', 'utf8').match(/Content-Security-Policy: (.*)/)?.[1]
+  expect(csp).toBeTruthy()
+  // Serve the page with the header Cloudflare Pages will send (vite preview does not read _headers).
+  await page.route('**/*', async (route) => {
+    if (route.request().resourceType() !== 'document') return route.fallback()
+    const response = await route.fetch()
+    return route.fulfill({ response, headers: { ...response.headers(), 'content-security-policy': csp! } })
+  })
+  const violations: string[] = []
+  page.on('console', (message) => {
+    if (message.text().includes('Content Security Policy')) violations.push(message.text())
+  })
+  await page.goto('/')
+  await expect(page.locator('.card__temp').first()).toBeVisible()
+  await expect(page.locator('canvas').first()).toBeVisible()
+  await page.getByRole('radio', { name: 'Night' }).click()
+  expect(violations).toEqual([])
 })
