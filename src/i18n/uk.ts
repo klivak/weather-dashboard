@@ -161,6 +161,7 @@ export const uk: Messages = {
     label: 'Оновлено {time}',
     justNow: 'щойно',
     refresh: 'Оновити погоду',
+    failed: 'Не вдалося оновити погоду. Показуємо останні дані.',
   },
   jump: {
     label: 'Перейти до міста',

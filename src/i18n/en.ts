@@ -157,6 +157,7 @@ export const en = {
     label: 'Updated {time}',
     justNow: 'just now',
     refresh: 'Refresh the weather',
+    failed: 'Couldn’t refresh the weather. Showing the last data.',
   },
   jump: {
     label: 'Jump to a city',

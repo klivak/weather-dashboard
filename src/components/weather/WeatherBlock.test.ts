@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/api/http'
 import type { City, CurrentWeather, Forecast } from '@/api/models'
 import { useSettingsStore } from '@/stores/settings'
+import { useToasts } from '@/composables/useToasts'
 import WeatherBlock from './WeatherBlock.vue'
 
 const api = vi.hoisted(() => ({ getCurrentWeather: vi.fn(), getForecast: vi.fn() }))
@@ -268,5 +269,18 @@ describe('WeatherBlock units', () => {
     expect(details.Visibility).toBe('5.3 mi')
     const points = block.findComponent({ name: 'TempChart' }).props('points') as { value: number }[]
     expect(points[0]?.value).toBeCloseTo(27.32, 2)
+  })
+})
+
+describe('WeatherBlock refresh failure', () => {
+  it('says so when a manual refresh fails and keeps the shown data', async () => {
+    const block = mountBlock()
+    await flushPromises()
+    api.getCurrentWeather.mockRejectedValueOnce(new ApiError('network', 'offline'))
+    await block.find('[aria-label="Refresh the weather"]').trigger('click')
+    await flushPromises()
+    const { toasts } = useToasts()
+    expect(toasts.value.at(-1)?.message).toBe('Couldn’t refresh the weather. Showing the last data.')
+    expect(block.find('.card__temp').exists()).toBe(true)
   })
 })

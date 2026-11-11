@@ -37,7 +37,8 @@ export function useWeather(city: () => City | null | undefined, locale: () => Lo
   let loadedAt = 0
 
   /** `quiet` refreshes keep the current data and state on screen and ignore failures. */
-  async function load(quiet = false, fresh = false) {
+  /** Returns whether fresh data arrived. */
+  async function load(quiet = false, fresh = false): Promise<boolean> {
     controller?.abort()
     const target = city()
     if (!target) {
@@ -45,7 +46,7 @@ export function useWeather(city: () => City | null | undefined, locale: () => Lo
       forecast.value = null
       status.value = 'idle'
       loadedCityId = null
-      return
+      return false
     }
 
     const own = new AbortController()
@@ -80,7 +81,7 @@ export function useWeather(city: () => City | null | undefined, locale: () => Lo
         getCurrentWeather(target, locale(), own.signal, fresh),
         getForecast(target, locale(), own.signal, fresh),
       ])
-      if (controller !== own) return
+      if (controller !== own) return false
       current.value = now
       forecast.value = next
       loadedCityId = target.id
@@ -89,10 +90,12 @@ export function useWeather(city: () => City | null | undefined, locale: () => Lo
       status.value = 'success'
       errorKind.value = null
       writeSnapshot(target.id, locale(), { current: now, forecast: next })
+      return true
     } catch (error) {
-      if (isAbortError(error) || controller !== own || quiet) return
+      if (isAbortError(error) || controller !== own || quiet) return false
       errorKind.value = error instanceof ApiError ? error.kind : 'network'
       status.value = 'error'
+      return false
     }
   }
 
@@ -118,12 +121,12 @@ export function useWeather(city: () => City | null | undefined, locale: () => Lo
     window.removeEventListener('online', onOnline)
   })
 
-  /** User-requested: bypass every cache, keep the current data on screen meanwhile. */
-  async function refresh() {
-    if (refreshing.value) return
+  /** User-requested: bypass every cache, keep the current data on screen meanwhile; resolves to success. */
+  async function refresh(): Promise<boolean> {
+    if (refreshing.value) return false
     refreshing.value = true
     try {
-      await load(true, true)
+      return await load(true, true)
     } finally {
       refreshing.value = false
     }
