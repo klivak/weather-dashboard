@@ -1,5 +1,12 @@
 import type { Condition, CurrentWeather, Forecast, ForecastPoint } from '@/api/models'
 
+/** What a weather block shows: today (card + hourly chart) or five days (daily list + daily chart). */
+export type ForecastView = 'day' | 'week'
+
+export function isForecastView(value: unknown): value is ForecastView {
+  return value === 'day' || value === 'week'
+}
+
 export interface TempPoint {
   /** Unix seconds (UTC). */
   dt: number

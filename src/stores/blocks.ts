@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { completeCityNames } from '@/api/cities'
 import type { City } from '@/api/models'
+import { isForecastView, type ForecastView } from '@/domain/forecast'
 import { MAX_BLOCKS } from '@/domain/limits'
 import { isRecord, readStorage, writeStorage } from '@/utils/storage'
 import { parseCity } from './cityValidation'
@@ -12,6 +13,8 @@ export interface WeatherBlockState {
   id: string
   /** null until the user picks a city (or the default city is resolved). */
   city: City | null
+  /** Remembered day / 5-day choice; absent means "day". */
+  view?: ForecastView
 }
 
 interface SavedBlocks {
@@ -32,7 +35,9 @@ function parseBlocks(value: unknown): WeatherBlockState[] | null {
   for (const item of value.blocks) {
     if (!isRecord(item) || typeof item.id !== 'string' || seen.has(item.id)) continue
     seen.add(item.id)
-    blocks.push({ id: item.id, city: item.city === null ? null : parseCity(item.city) })
+    const block: WeatherBlockState = { id: item.id, city: item.city === null ? null : parseCity(item.city) }
+    if (isForecastView(item.view)) block.view = item.view
+    blocks.push(block)
     if (blocks.length === MAX_BLOCKS) break
   }
   return blocks.length ? blocks : null
@@ -76,9 +81,14 @@ export const useBlocksStore = defineStore('blocks', () => {
     if (current?.city?.id === city.id && complete !== city) current.city = complete
   }
 
+  function setView(id: string, view: ForecastView) {
+    const block = blocks.value.find((item) => item.id === id)
+    if (block) block.view = view
+  }
+
   watch(blocks, (value) => writeStorage(BLOCKS_KEY, { v: 1, blocks: value } satisfies SavedBlocks), {
     deep: true,
   })
 
-  return { blocks, canAdd, canRemove, restored, add, remove, setCity }
+  return { blocks, canAdd, canRemove, restored, add, remove, setCity, setView }
 })

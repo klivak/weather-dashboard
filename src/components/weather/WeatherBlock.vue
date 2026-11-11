@@ -6,7 +6,7 @@ import BaseButton from '@/components/base/BaseButton.vue'
 import SegmentedControl from '@/components/base/SegmentedControl.vue'
 import CitySearch from '@/components/search/CitySearch.vue'
 import { useWeather } from '@/composables/useWeather'
-import { dailySummaries, localDateKey, todaySeries } from '@/domain/forecast'
+import { dailySummaries, localDateKey, todaySeries, type ForecastView } from '@/domain/forecast'
 import { useI18n } from '@/i18n'
 import { useThemeStore } from '@/stores/theme'
 import { formatDayDate, formatShortWeekday, formatTemp, formatTime } from '@/utils/format'
@@ -15,8 +15,6 @@ import type { ChartPoint } from './TempChart.vue'
 import { loadTempChart } from './loadTempChart'
 import WeatherCard from './WeatherCard.vue'
 import WeekCard from './WeekCard.vue'
-
-export type ForecastView = 'day' | 'week'
 
 const props = withDefaults(
   defineProps<{

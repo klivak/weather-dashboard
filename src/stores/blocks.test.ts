@@ -113,6 +113,23 @@ describe('blocks store', () => {
     expect(store.blocks[1]?.city).toBeNull()
   })
 
+  it('remembers each block’s day / 5-day choice', async () => {
+    const store = useBlocksStore()
+    const id = store.blocks[0]!.id
+    store.setView(id, 'week')
+    await nextTick()
+
+    setActivePinia(createPinia())
+    expect(useBlocksStore().blocks[0]?.view).toBe('week')
+
+    localStorage.setItem(
+      BLOCKS_KEY,
+      JSON.stringify({ v: 1, blocks: [{ id: 'a', city: null, view: 'month' }] }),
+    )
+    setActivePinia(createPinia())
+    expect(useBlocksStore().blocks[0]?.view).toBeUndefined()
+  })
+
   it('falls back to one block when storage is unreadable', () => {
     localStorage.setItem(BLOCKS_KEY, '{"v":2}')
     expect(useBlocksStore().blocks).toHaveLength(1)

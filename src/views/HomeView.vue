@@ -96,7 +96,9 @@ async function confirmRemove() {
         :autofocus="block.id === focusId"
         :locating="block.id === locatingId"
         :report-sun="index === 0"
+        :view="block.view ?? 'day'"
         :favourite="favourites.isFavourite(block.city?.id)"
+        @update:view="store.setView(block.id, $event)"
         @update:city="store.setCity(block.id, $event)"
       >
         <template v-if="block.city || store.canRemove" #actions>
