@@ -25,6 +25,7 @@ describe('proxyOwm', () => {
       lang: 'uk',
       appid: KEY,
     })
+    expect(fetchImpl.mock.calls[0]?.[1]).toMatchObject({ cf: { cacheTtl: 600, cacheEverything: true } })
     expect(response.status).toBe(200)
     expect(response.headers.get('Cache-Control')).toBe('public, max-age=600')
     await expect(response.json()).resolves.toEqual({ ok: true })

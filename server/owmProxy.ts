@@ -44,7 +44,12 @@ export async function proxyOwm(
 
   let response: Response
   try {
-    response = await fetchImpl(upstream.toString(), { headers: { Accept: 'application/json' } })
+    const init: RequestInit & { cf?: { cacheTtl: number; cacheEverything: boolean } } = {
+      headers: { Accept: 'application/json' },
+      // Cloudflare-only: cache successful upstream answers at the edge for the route's lifetime.
+      cf: { cacheTtl: route.maxAge, cacheEverything: true },
+    }
+    response = await fetchImpl(upstream.toString(), init)
   } catch {
     return json({ message: 'Upstream unreachable' }, 502)
   }
