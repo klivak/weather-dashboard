@@ -1,6 +1,35 @@
 // Allow-listed proxy to OpenWeatherMap that adds the secret API key on the server.
 
+type Validator = (value: string) => string | null
+
+/** Coordinates must be numbers in range; rounding to 2 decimals (~1 km) also makes the edge cache hit far more often. */
+function coordinate(limit: number): Validator {
+  return (value) => {
+    const number = Number(value)
+    if (value.trim() === '' || !Number.isFinite(number) || Math.abs(number) > limit) return null
+    return (Math.round(number * 100) / 100).toString()
+  }
+}
+
+const oneOf =
+  (...allowed: string[]): Validator =>
+  (value) =>
+    allowed.includes(value) ? value : null
+
+const VALIDATORS: Record<string, Validator> = {
+  lat: coordinate(90),
+  lon: coordinate(180),
+  units: oneOf('metric'),
+  lang: oneOf('en', 'uk'),
+  limit: oneOf('1', '2', '3', '4', '5'),
+  q: (value) => {
+    const query = value.trim()
+    return query.length >= 2 && query.length <= 80 ? query : null
+  },
+}
+
 interface Route {
+  /** Params the route needs (all required and validated); anything else in the request is dropped. */
   params: readonly string[]
   maxAge: number
 }
@@ -21,7 +50,21 @@ function json(body: unknown, status: number, headers: Record<string, string> = {
   })
 }
 
-/** Forward an allowed GET to OpenWeatherMap with only known params plus the key. */
+/** A user-requested refresh: browsers send `Cache-Control: no-cache` for fetch(..., { cache: 'reload' }). */
+function wantsFresh(request: Request): boolean {
+  return /\bno-cache\b/.test(request.headers.get('Cache-Control') ?? '')
+}
+
+type CloudflareInit = RequestInit & {
+  cf?: { cacheEverything?: boolean; cacheTtlByStatus?: Record<string, number> }
+}
+
+/**
+ * Forward an allowed GET to OpenWeatherMap with validated params plus the key. Every param of a route is required
+ * and checked (numbers in range, known languages and units), so the key cannot be used for arbitrary queries.
+ * Successful answers are cached at the Cloudflare edge; errors never are. Volume abuse with valid requests is
+ * left to a Cloudflare rate-limiting rule on /api/* (see README).
+ */
 export async function proxyOwm(
   request: Request,
   path: string,
@@ -37,19 +80,18 @@ export async function proxyOwm(
   const incoming = new URL(request.url).searchParams
   const upstream = new URL(`${UPSTREAM}/${path}`)
   for (const name of route.params) {
-    const value = incoming.get(name)
-    if (value !== null) upstream.searchParams.set(name, value.slice(0, 100))
+    const raw = incoming.get(name)
+    const value = raw === null ? null : (VALIDATORS[name]?.(raw) ?? null)
+    if (value === null) return json({ message: `Invalid or missing parameter: ${name}` }, 400)
+    upstream.searchParams.set(name, value)
   }
   upstream.searchParams.set('appid', apiKey)
 
   let response: Response
   try {
-    const init: RequestInit & { cf?: { cacheTtl: number; cacheEverything: boolean } } = {
-      headers: { Accept: 'application/json' },
-    }
-    // Cloudflare-only: cache successful upstream answers at the edge, unless the user asked for fresh data.
-    if (!request.headers.get('Cache-Control')?.includes('no-cache')) {
-      init.cf = { cacheTtl: route.maxAge, cacheEverything: true }
+    const init: CloudflareInit = { headers: { Accept: 'application/json' } }
+    if (!wantsFresh(request)) {
+      init.cf = { cacheEverything: true, cacheTtlByStatus: { '200-299': route.maxAge, '300-599': 0 } }
     }
     response = await fetchImpl(upstream.toString(), init)
   } catch {
