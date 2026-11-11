@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, watch } from 'vue'
+import { computed, defineAsyncComponent, onBeforeUnmount, watch } from 'vue'
 import type { City } from '@/api/models'
 import { cityName } from '@/api/models'
 import BaseButton from '@/components/base/BaseButton.vue'
@@ -10,7 +10,9 @@ import { dailySummaries, localDateKey, todaySeries } from '@/domain/forecast'
 import { useI18n } from '@/i18n'
 import { useThemeStore } from '@/stores/theme'
 import { formatDayDate, formatShortWeekday, formatTemp, formatTime } from '@/utils/format'
-import TempChart, { type ChartPoint } from './TempChart.vue'
+import ChartSkeleton from './ChartSkeleton.vue'
+import type { ChartPoint } from './TempChart.vue'
+import { loadTempChart } from './loadTempChart'
 import WeatherCard from './WeatherCard.vue'
 import WeekCard from './WeekCard.vue'
 
@@ -43,6 +45,9 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{ 'update:city': [city: City] }>()
+
+/** Chart.js is about half of the app's JavaScript, so the chart arrives as its own chunk (prefetched in main.ts). */
+const TempChart = defineAsyncComponent({ loader: loadTempChart, loadingComponent: ChartSkeleton, delay: 0 })
 
 const view = defineModel<ForecastView>('view', { default: 'day' })
 
@@ -235,10 +240,7 @@ const errorText = computed(() => {
           <span v-for="cell in 6" :key="cell" class="skeleton__cell" />
         </div>
       </div>
-      <div class="skeleton skeleton--chart">
-        <span class="skeleton__line skeleton__line--meta" />
-        <span class="skeleton__chart" />
-      </div>
+      <ChartSkeleton />
     </div>
 
     <div
@@ -438,17 +440,6 @@ const errorText = computed(() => {
 
 .skeleton__cell {
   height: 56px;
-}
-
-.skeleton__chart {
-  height: 220px;
-  border-radius: var(--radius-md) !important;
-}
-
-@media (min-width: 1024px) {
-  .skeleton__chart {
-    height: 260px;
-  }
 }
 
 @keyframes shimmer {
