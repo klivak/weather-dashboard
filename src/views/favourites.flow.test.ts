@@ -59,7 +59,7 @@ describe('favourites flow', () => {
     const app = await mountApp()
     const star = homeBlock(app).find('[aria-label="Add Kyiv to favourites"]')
     expect(star.attributes('aria-pressed')).toBe('false')
-    expect(favouritesPanel(app).text()).toContain('No favourites yet')
+    expect(favouritesPanel(app).find('section.block').exists()).toBe(false)
 
     await star.trigger('click')
     await flushPromises()
@@ -70,6 +70,8 @@ describe('favourites flow', () => {
     expect(app.find('#tab-favourites').text()).toContain('1')
     expect(JSON.parse(localStorage.getItem(FAVOURITES_KEY)!).cities[0].name).toBe('Kyiv')
 
+    await app.find('#tab-favourites').trigger('click')
+    await flushPromises()
     const favBlock = favouritesPanel(app).find('section.block')
     expect(favBlock.classes()).toContain('block--favourite')
     expect(favBlock.find('[role="combobox"]').exists()).toBe(false)
@@ -123,5 +125,20 @@ describe('favourites flow', () => {
     expect(dialog()).toBeUndefined()
     expect(useFavouritesStore().cities).toHaveLength(5)
     expect(useFavouritesStore().pending).toBeNull()
+  })
+})
+
+describe('favourites tab loading', () => {
+  it('renders (and fetches) its blocks only after the tab is first opened', async () => {
+    localStorage.setItem(FAVOURITES_KEY, JSON.stringify({ v: 1, cities: [city(1)] }))
+    const app = await mountApp()
+    expect(favouritesPanel(app).find('section.block').exists()).toBe(false)
+
+    await app.find('#tab-favourites').trigger('click')
+    await flushPromises()
+    expect(favouritesPanel(app).find('section.block').exists()).toBe(true)
+
+    await app.find('#tab-home').trigger('click')
+    expect(favouritesPanel(app).find('section.block').exists()).toBe(true)
   })
 })

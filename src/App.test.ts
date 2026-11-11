@@ -80,6 +80,7 @@ describe('App shell', () => {
     await nextTick()
     expect(app.findAll('[role="tab"]').map((tab) => tab.text())).toEqual(['Головна', 'Вибране'])
     expect(document.documentElement.lang).toBe('uk')
+    await app.find('#tab-favourites').trigger('click')
     expect(app.find('#panel-favourites').text()).toContain('до 5 міст')
   })
 })

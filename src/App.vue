@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, watch, watchEffect } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue'
 import TabBar from '@/components/base/TabBar.vue'
 import IconHome from '@/components/icons/IconHome.vue'
 import IconStar from '@/components/icons/IconStar.vue'
@@ -18,6 +18,12 @@ const { t, locale } = useI18n()
 const themeStore = useThemeStore()
 const favourites = useFavouritesStore()
 const tab = useHashTab()
+
+/** The favourites tab renders on first visit and then stays mounted, so its blocks fetch only when wanted. */
+const favouritesVisited = ref(tab.value === 'favourites')
+watch(tab, (value) => {
+  if (value === 'favourites') favouritesVisited.value = true
+})
 
 const tabs = computed(() => [
   { id: 'home' as TabId, label: t('nav.home') },
@@ -93,7 +99,7 @@ watchEffect(() => {
         tabindex="0"
       >
         <h2 class="visually-hidden">{{ t('favourites.heading') }}</h2>
-        <FavouritesView @browse="tab = 'home'" />
+        <FavouritesView v-if="favouritesVisited" @browse="tab = 'home'" />
       </section>
     </main>
 
