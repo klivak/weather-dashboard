@@ -15,8 +15,12 @@ const props = withDefaults(
     city: City | null
     /** Show the city search (home tab); favourites blocks are fixed to their city. */
     searchable?: boolean
+    /** Accessible name used until the city is known, e.g. "City 2". */
+    label?: string
+    /** Focus the search field on mount (a block the user just added). */
+    autofocus?: boolean
   }>(),
-  { searchable: true },
+  { searchable: true, label: undefined, autofocus: false },
 )
 
 const emit = defineEmits<{ 'update:city': [city: City] }>()
@@ -58,12 +62,15 @@ const errorText = computed(() => {
 </script>
 
 <template>
-  <section class="block" :aria-busy="status === 'loading'" :aria-label="name || undefined">
-    <div v-if="searchable" class="block__toolbar">
-      <div class="block__search">
-        <CitySearch :city="city" @select="emit('update:city', $event)" />
+  <section class="block" :aria-busy="status === 'loading'" :aria-label="name || label">
+    <div v-if="searchable || $slots.actions" class="block__toolbar">
+      <div v-if="searchable" class="block__search">
+        <CitySearch :city="city" :autofocus="autofocus" @select="emit('update:city', $event)" />
       </div>
+      <div v-if="$slots.actions" class="block__actions"><slot name="actions" /></div>
     </div>
+
+    <p class="visually-hidden" role="status">{{ showSkeleton ? t('weather.loading') : '' }}</p>
 
     <p v-if="!city" class="block__hint">{{ t('weather.pickCity') }}</p>
 
@@ -88,7 +95,6 @@ const errorText = computed(() => {
         <span class="skeleton__line skeleton__line--meta" />
         <span class="skeleton__chart" />
       </div>
-      <span class="visually-hidden">{{ t('weather.loading') }}</span>
     </div>
 
     <div
@@ -96,9 +102,7 @@ const errorText = computed(() => {
       class="block__body"
       :class="{ 'block__body--refreshing': status === 'loading' }"
     >
-      <WeatherCard :city="city" :weather="current">
-        <template v-if="$slots.actions" #actions><slot name="actions" /></template>
-      </WeatherCard>
+      <WeatherCard :city="city" :weather="current" />
       <TempChart
         v-if="series.length && forecast"
         :points="series"
@@ -136,7 +140,14 @@ const errorText = computed(() => {
 
 .block__search {
   flex: 1;
+  min-width: 0;
   max-width: 420px;
+}
+
+.block__actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-left: auto;
 }
 
 .block__hint {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useId, useTemplateRef, watch } from 'vue'
+import { computed, onMounted, ref, useId, useTemplateRef, watch } from 'vue'
 import type { City } from '@/api/models'
 import { cityName } from '@/api/models'
 import BaseSpinner from '@/components/base/BaseSpinner.vue'
@@ -14,6 +14,8 @@ import { cityRegion } from '@/utils/region'
 const props = defineProps<{
   /** The city currently shown; its localised name fills the input when the user is not typing. */
   city?: City | null
+  /** Move focus here on mount, e.g. in a block the user just added. */
+  autofocus?: boolean
 }>()
 
 const emit = defineEmits<{ select: [city: City] }>()
@@ -36,6 +38,10 @@ const announcement = ref('')
 const displayName = computed(() => (props.city ? cityName(props.city, locale.value) : ''))
 
 watch(displayName, (name) => setQuietly(name), { immediate: true })
+
+onMounted(() => {
+  if (props.autofocus) input.value?.focus()
+})
 
 const hasMinLength = computed(() => query.value.trim().length >= 2)
 const showPopup = computed(() => open.value && hasMinLength.value && status.value !== 'idle')
