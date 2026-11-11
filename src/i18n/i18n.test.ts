@@ -34,7 +34,7 @@ describe('messages', () => {
 
 describe('translate', () => {
   it('fills placeholders and leaves unknown ones untouched', () => {
-    expect(translate('en', 'favourites.emptyText', { max: 5 })).toContain('up to 5 cities')
+    expect(translate('en', 'favourites.emptyText', { max: 5 })).toContain('up to 5 cities')
     expect(translate('uk', 'favourites.emptyText')).toContain('{max}')
   })
 

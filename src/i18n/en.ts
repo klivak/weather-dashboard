@@ -21,7 +21,7 @@ export const en = {
   favourites: {
     heading: 'Favourite cities',
     emptyTitle: 'No favourites yet',
-    emptyText: 'Tap the star on any city to keep it here. You can save up to {max} cities.',
+    emptyText: 'Tap the star on any city to keep it here. You can save up to {max} cities.',
     emptyAction: 'Find a city',
   },
   footer: {
