@@ -112,6 +112,7 @@ export const uk: Messages = {
   home: {
     heading: 'Ваші міста',
     blockLabel: 'Місто {n}',
+    popular: 'Популярні міста',
     add: 'Додати місто',
     count: '{count} з {max}',
     limit: 'Одночасно можна порівнювати до {max} міст',
@@ -143,6 +144,11 @@ export const uk: Messages = {
     emptyTitle: 'Тут поки порожньо',
     emptyText: 'Натисніть зірочку біля міста, щоб зберегти його тут. Можна зберегти до {max} міст.',
     emptyAction: 'Знайти місто',
+  },
+  updated: {
+    label: 'Оновлено {time}',
+    justNow: 'щойно',
+    refresh: 'Оновити погоду',
   },
   toast: {
     region: 'Сповіщення',

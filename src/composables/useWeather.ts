@@ -27,13 +27,17 @@ export function useWeather(city: () => City | null | undefined, locale: () => Lo
   const forecast = shallowRef<Forecast | null>(null)
   const status = ref<WeatherStatus>('idle')
   const errorKind = ref<ApiErrorKind | null>(null)
+  /** When the shown data was fetched (ms), for "updated 5 min ago". */
+  const updatedAt = ref<number | null>(null)
+  /** A user-requested refresh is running. */
+  const refreshing = ref(false)
 
   let controller: AbortController | undefined
   let loadedCityId: string | null = null
   let loadedAt = 0
 
   /** `quiet` refreshes keep the current data and state on screen and ignore failures. */
-  async function load(quiet = false) {
+  async function load(quiet = false, fresh = false) {
     controller?.abort()
     const target = city()
     if (!target) {
@@ -48,13 +52,14 @@ export function useWeather(city: () => City | null | undefined, locale: () => Lo
     controller = own
 
     // Show the last known data at once and turn this into a background refresh.
-    if (!quiet) {
+    if (!quiet && !fresh) {
       const snapshot = readSnapshot(target.id, locale())
       if (snapshot) {
         current.value = snapshot.current
         forecast.value = snapshot.forecast
         loadedCityId = target.id
         loadedAt = snapshot.savedAt
+        updatedAt.value = snapshot.savedAt
         status.value = 'success'
         errorKind.value = null
         quiet = true
@@ -72,14 +77,15 @@ export function useWeather(city: () => City | null | undefined, locale: () => Lo
 
     try {
       const [now, next] = await Promise.all([
-        getCurrentWeather(target, locale(), own.signal),
-        getForecast(target, locale(), own.signal),
+        getCurrentWeather(target, locale(), own.signal, fresh),
+        getForecast(target, locale(), own.signal, fresh),
       ])
       if (controller !== own) return
       current.value = now
       forecast.value = next
       loadedCityId = target.id
       loadedAt = Date.now()
+      updatedAt.value = loadedAt
       status.value = 'success'
       errorKind.value = null
       writeSnapshot(target.id, locale(), { current: now, forecast: next })
@@ -112,5 +118,16 @@ export function useWeather(city: () => City | null | undefined, locale: () => Lo
     window.removeEventListener('online', onOnline)
   })
 
-  return { current, forecast, status, errorKind, reload: () => load() }
+  /** User-requested: bypass every cache, keep the current data on screen meanwhile. */
+  async function refresh() {
+    if (refreshing.value) return
+    refreshing.value = true
+    try {
+      await load(true, true)
+    } finally {
+      refreshing.value = false
+    }
+  }
+
+  return { current, forecast, status, errorKind, updatedAt, refreshing, refresh, reload: () => load() }
 }

@@ -8,6 +8,8 @@ interface Entry {
 export interface CachedJsonOptions {
   signal?: AbortSignal
   ttlMs?: number
+  /** Ignore cached answers (memory and HTTP) and store the new one. */
+  fresh?: boolean
 }
 
 export interface CachedJson {
@@ -24,9 +26,10 @@ export function createCachedJson(defaultTtlMs: number, now: () => number = Date.
 
   function cached<T>(url: string, options: CachedJsonOptions = {}): Promise<T> {
     const hit = entries.get(url)
-    if (hit && hit.expires > now()) return withAbort(hit.promise as Promise<T>, options.signal)
+    if (hit && hit.expires > now() && !options.fresh)
+      return withAbort(hit.promise as Promise<T>, options.signal)
 
-    const promise = getJson<T>(url)
+    const promise = getJson<T>(url, options.fresh ? { cache: 'no-cache' } : {})
     const entry: Entry = { expires: now() + (options.ttlMs ?? defaultTtlMs), promise }
     entries.set(url, entry)
     promise.catch(() => {

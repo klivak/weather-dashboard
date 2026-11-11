@@ -108,6 +108,7 @@ export const en = {
   home: {
     heading: 'Your cities',
     blockLabel: 'City {n}',
+    popular: 'Popular cities',
     add: 'Add a city',
     count: '{count} of {max}',
     limit: 'You can compare up to {max} cities at once',
@@ -139,6 +140,11 @@ export const en = {
     emptyTitle: 'No favourites yet',
     emptyText: 'Tap the star on any city to keep it here. You can save up to {max} cities.',
     emptyAction: 'Find a city',
+  },
+  updated: {
+    label: 'Updated {time}',
+    justNow: 'just now',
+    refresh: 'Refresh the weather',
   },
   toast: {
     region: 'Notifications',

@@ -46,7 +46,7 @@ describe('useWeather', () => {
     await flushPromises()
     expect(weather.status.value).toBe('success')
     expect(weather.current.value).toEqual({ temp: 5, lang: 'en' })
-    expect(api.getForecast).toHaveBeenCalledWith(kyiv, 'en', expect.any(AbortSignal))
+    expect(api.getForecast).toHaveBeenCalledWith(kyiv, 'en', expect.any(AbortSignal), false)
   })
 
   it('clears data for a new city but keeps it while the language changes', async () => {
@@ -198,5 +198,26 @@ describe('useWeather freshness', () => {
     scope.stop()
     await vi.advanceTimersByTimeAsync(REFRESH_AFTER_MS * 2)
     expect(api.getCurrentWeather).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('useWeather manual refresh', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('bypasses caches, keeps the data on screen and records the time', async () => {
+    const { weather } = setup()
+    await flushPromises()
+    const first = weather.updatedAt.value
+    expect(first).not.toBeNull()
+
+    api.getCurrentWeather.mockImplementationOnce(() => Promise.resolve({ temp: 8, lang: 'en' }))
+    const pending = weather.refresh()
+    expect(weather.refreshing.value).toBe(true)
+    expect(weather.status.value).toBe('success')
+    await pending
+    expect(weather.refreshing.value).toBe(false)
+    expect(api.getCurrentWeather).toHaveBeenLastCalledWith(kyiv, 'en', expect.any(AbortSignal), true)
+    expect(weather.current.value).toEqual({ temp: 8, lang: 'en' })
+    expect(weather.updatedAt.value).toBeGreaterThanOrEqual(first!)
   })
 })

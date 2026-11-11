@@ -123,7 +123,7 @@ describe('WeatherBlock', () => {
       'Захід сонця': '16:31',
     })
     expect(block.find('h3').text()).toBe('Львів')
-    expect(api.getCurrentWeather).toHaveBeenCalledWith(lviv, 'uk', expect.any(AbortSignal))
+    expect(api.getCurrentWeather).toHaveBeenCalledWith(lviv, 'uk', expect.any(AbortSignal), false)
   })
 
   it('passes today’s series to the chart', async () => {
@@ -225,5 +225,31 @@ describe('WeatherBlock 5-day view', () => {
     await flushPromises()
     expect(wrapper.find('[role="combobox"]').exists()).toBe(false)
     expect(wrapper.find('[role="radiogroup"]').attributes('aria-label')).toBe('Forecast period')
+  })
+})
+
+describe('WeatherBlock extras', () => {
+  it('shows when the data was updated and refreshes it on demand', async () => {
+    const block = mountBlock()
+    await flushPromises()
+    expect(block.find('.block__meta').text()).toContain('Updated just now')
+
+    await block.find('[aria-label="Refresh the weather"]').trigger('click')
+    await flushPromises()
+    expect(api.getCurrentWeather).toHaveBeenLastCalledWith(lviv, 'en', expect.any(AbortSignal), true)
+  })
+
+  it('offers popular cities in an empty block', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const odesa: City = { ...lviv, id: 'o', name: 'Odesa', names: { en: 'Odesa', uk: 'Одеса' } }
+    wrapper = mount(WeatherBlock, {
+      props: { city: null, suggestions: [odesa] },
+      global: { plugins: [pinia], stubs: { TempChart: true } },
+    })
+    const chip = wrapper.find('.block__chip')
+    expect(chip.text()).toBe('Odesa')
+    await chip.trigger('click')
+    expect(wrapper.emitted('update:city')).toEqual([[odesa]])
   })
 })

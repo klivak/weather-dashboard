@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onBeforeUnmount, watch } from 'vue'
+import { computed, defineAsyncComponent, onBeforeUnmount, onScopeDispose, watch } from 'vue'
 import type { City } from '@/api/models'
 import { cityName } from '@/api/models'
 import BaseButton from '@/components/base/BaseButton.vue'
+import BaseSpinner from '@/components/base/BaseSpinner.vue'
 import SegmentedControl from '@/components/base/SegmentedControl.vue'
 import CitySearch from '@/components/search/CitySearch.vue'
+import { useNow } from '@/composables/useNow'
 import { useWeather } from '@/composables/useWeather'
 import { dailySummaries, localDateKey, todaySeries, type ForecastView } from '@/domain/forecast'
 import { useI18n } from '@/i18n'
@@ -31,6 +33,8 @@ const props = withDefaults(
     locating?: boolean
     /** This block's city drives the automatic day/night look (the first home block). */
     reportSun?: boolean
+    /** One-click cities offered while the block is empty. */
+    suggestions?: City[]
   }>(),
   {
     searchable: true,
@@ -39,6 +43,7 @@ const props = withDefaults(
     favourite: false,
     locating: false,
     reportSun: false,
+    suggestions: () => [],
   },
 )
 
@@ -52,7 +57,7 @@ const view = defineModel<ForecastView>('view', { default: 'day' })
 defineSlots<{ actions?: () => unknown }>()
 
 const { t, locale } = useI18n()
-const { current, forecast, status, errorKind, reload } = useWeather(
+const { current, forecast, status, errorKind, updatedAt, refreshing, refresh, reload } = useWeather(
   () => props.city,
   () => locale.value,
 )
@@ -70,6 +75,17 @@ watch(
 )
 onBeforeUnmount(() => {
   if (props.reportSun) themeStore.setSun(null)
+})
+
+const now = useNow(onScopeDispose)
+const updatedLabel = computed(() => {
+  if (!updatedAt.value) return ''
+  const minutes = Math.floor((now.value - updatedAt.value) / 60_000)
+  if (minutes < 1) return t('updated.label', { time: t('updated.justNow') })
+  const format = new Intl.RelativeTimeFormat(locale.value === 'uk' ? 'uk-UA' : 'en-GB', { numeric: 'auto' })
+  const time =
+    minutes < 60 ? format.format(-minutes, 'minute') : format.format(-Math.floor(minutes / 60), 'hour')
+  return t('updated.label', { time })
 })
 
 const viewOptions = computed(() => [
@@ -221,7 +237,20 @@ const errorText = computed(() => {
       {{ t('location.detecting') }}
     </div>
 
-    <p v-if="!city && !locating" class="block__hint">{{ t('weather.pickCity') }}</p>
+    <div v-if="!city && !locating" class="block__empty">
+      <p class="block__hint">{{ t('weather.pickCity') }}</p>
+      <div v-if="suggestions.length" class="block__chips" role="group" :aria-label="t('home.popular')">
+        <button
+          v-for="suggestion in suggestions"
+          :key="suggestion.id"
+          type="button"
+          class="block__chip"
+          @click="emit('update:city', suggestion)"
+        >
+          {{ suggestion.names[locale] ?? suggestion.name }}
+        </button>
+      </div>
+    </div>
 
     <div v-else-if="status === 'error' && !current" class="block__error" role="alert">
       <p>{{ errorText }}</p>
@@ -266,6 +295,33 @@ const errorText = computed(() => {
           :boundary-label="t('chart.tomorrow')"
         />
       </figure>
+      <div v-if="updatedLabel" class="block__meta">
+        <span>{{ updatedLabel }}</span>
+        <button
+          type="button"
+          class="block__refresh"
+          :aria-label="t('updated.refresh')"
+          :title="t('updated.refresh')"
+          :disabled="refreshing"
+          @click="refresh"
+        >
+          <BaseSpinner v-if="refreshing" :size="16" />
+          <svg
+            v-else
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.9"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" />
+          </svg>
+        </button>
+      </div>
     </div>
   </section>
 </template>
@@ -343,6 +399,86 @@ const errorText = computed(() => {
     opacity: 0.3;
     transform: scale(0.7);
   }
+}
+
+.block__empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-4);
+}
+
+.block__empty .block__hint {
+  padding: 0;
+}
+
+.block__chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  max-width: 560px;
+}
+
+.block__chip {
+  min-height: var(--control-height-sm);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.block__chip:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-raised));
+}
+
+.block__chip:active {
+  transform: scale(0.96);
+}
+
+.block__meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+@media (min-width: 1024px) {
+  .block__meta {
+    grid-column: 1 / -1;
+  }
+}
+
+.block__refresh {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+.block__refresh:hover:not(:disabled) {
+  color: var(--text);
+  transform: rotate(-60deg);
+}
+
+.block__refresh:disabled {
+  cursor: progress;
 }
 
 .block__hint {

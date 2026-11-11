@@ -31,6 +31,15 @@ describe('proxyOwm', () => {
     await expect(response.json()).resolves.toEqual({ ok: true })
   })
 
+  it('skips the edge cache for a user-requested refresh', async () => {
+    const fetchImpl = upstreamOk()
+    const request = new Request('https://site.dev/api/owm/data/2.5/weather?lat=1&lon=2', {
+      headers: { 'Cache-Control': 'no-cache' },
+    })
+    await proxyOwm(request, 'data/2.5/weather', KEY, fetchImpl)
+    expect(fetchImpl.mock.calls[0]?.[1]).not.toHaveProperty('cf')
+  })
+
   it('rejects unknown paths and non-GET methods', async () => {
     const fetchImpl = upstreamOk()
     const unknown = await proxyOwm(

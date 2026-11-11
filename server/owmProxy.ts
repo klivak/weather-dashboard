@@ -46,8 +46,10 @@ export async function proxyOwm(
   try {
     const init: RequestInit & { cf?: { cacheTtl: number; cacheEverything: boolean } } = {
       headers: { Accept: 'application/json' },
-      // Cloudflare-only: cache successful upstream answers at the edge for the route's lifetime.
-      cf: { cacheTtl: route.maxAge, cacheEverything: true },
+    }
+    // Cloudflare-only: cache successful upstream answers at the edge, unless the user asked for fresh data.
+    if (!request.headers.get('Cache-Control')?.includes('no-cache')) {
+      init.cf = { cacheTtl: route.maxAge, cacheEverything: true }
     }
     response = await fetchImpl(upstream.toString(), init)
   } catch {

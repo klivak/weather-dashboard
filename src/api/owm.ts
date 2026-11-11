@@ -118,18 +118,24 @@ export async function getCurrentWeather(
   coords: Coords,
   lang: Locale,
   signal?: AbortSignal,
+  fresh = false,
 ): Promise<CurrentWeather> {
   const raw = await cachedJson<OwmCurrent>(
     url('/data/2.5/weather', { lat: coords.lat, lon: coords.lon, units: 'metric', lang }),
-    { signal },
+    { signal, fresh },
   )
   return toCurrent(raw)
 }
 
-export async function getForecast(coords: Coords, lang: Locale, signal?: AbortSignal): Promise<Forecast> {
+export async function getForecast(
+  coords: Coords,
+  lang: Locale,
+  signal?: AbortSignal,
+  fresh = false,
+): Promise<Forecast> {
   const raw = await cachedJson<OwmForecast>(
     url('/data/2.5/forecast', { lat: coords.lat, lon: coords.lon, units: 'metric', lang }),
-    { signal },
+    { signal, fresh },
   )
   return toForecast(raw)
 }

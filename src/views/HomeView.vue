@@ -11,6 +11,7 @@ import WeatherBlock from '@/components/weather/WeatherBlock.vue'
 import { useAnnouncer } from '@/composables/useAnnouncer'
 import { useToasts } from '@/composables/useToasts'
 import { MAX_BLOCKS } from '@/domain/limits'
+import { suggestCities } from '@/domain/popularCities'
 import { useI18n } from '@/i18n'
 import { useBlocksStore, type WeatherBlockState } from '@/stores/blocks'
 import { useFavouritesStore } from '@/stores/favourites'
@@ -36,6 +37,10 @@ const confirmOpen = computed({
 
 const pendingName = computed(() =>
   pendingRemoval.value?.city ? cityName(pendingRemoval.value.city, locale.value) : '',
+)
+
+const suggestions = computed(() =>
+  suggestCities(store.blocks.flatMap((block) => (block.city ? [block.city.id] : []))),
 )
 
 function nameOf(block: WeatherBlockState): string {
@@ -110,6 +115,7 @@ async function confirmRemove() {
         :autofocus="block.id === focusId"
         :locating="block.id === locatingId"
         :report-sun="index === 0"
+        :suggestions="suggestions"
         :view="block.view ?? 'day'"
         :favourite="favourites.isFavourite(block.city?.id)"
         @update:view="store.setView(block.id, $event)"

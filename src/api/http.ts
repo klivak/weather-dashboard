@@ -34,6 +34,8 @@ function kindFromStatus(status: number): ApiErrorKind {
 export interface RequestOptions {
   signal?: AbortSignal
   timeoutMs?: number
+  /** Browser HTTP cache mode, e.g. 'no-cache' for a user-requested refresh. */
+  cache?: RequestCache
 }
 
 const DEFAULT_TIMEOUT_MS = 10_000
@@ -41,14 +43,18 @@ const DEFAULT_TIMEOUT_MS = 10_000
 /** GET a URL and parse JSON, mapping every failure to a typed ApiError. */
 export async function getJson<T>(
   url: string,
-  { signal, timeoutMs = DEFAULT_TIMEOUT_MS }: RequestOptions = {},
+  { signal, timeoutMs = DEFAULT_TIMEOUT_MS, cache }: RequestOptions = {},
 ): Promise<T> {
   const timeout = AbortSignal.timeout(timeoutMs)
   const combined = signal ? AbortSignal.any([signal, timeout]) : timeout
 
   let response: Response
   try {
-    response = await fetch(url, { signal: combined, headers: { Accept: 'application/json' } })
+    response = await fetch(url, {
+      signal: combined,
+      headers: { Accept: 'application/json' },
+      ...(cache ? { cache } : {}),
+    })
   } catch (error) {
     if (signal?.aborted) throw new ApiError('aborted', 'Request aborted')
     if (timeout.aborted) throw new ApiError('timeout', `Request timed out after ${timeoutMs} ms`)
