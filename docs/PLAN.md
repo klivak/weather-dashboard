@@ -4,7 +4,7 @@ Compare the weather in up to five cities side by side: current conditions, an ho
 
 ## Status
 
-Current step: **5 — Multiple blocks**. Each step ends green on `npm run check` and with its own commits.
+Current step: **6 — Favourites**. Each step ends green on `npm run check` and with its own commits.
 
 | #   | Step                                               | State |
 | --- | -------------------------------------------------- | ----- |
@@ -13,8 +13,8 @@ Current step: **5 — Multiple blocks**. Each step ends green on `npm run check`
 | 2   | Shell: tokens, layout, header, tabs, i18n          | done  |
 | 3   | City search with autocomplete                      | done  |
 | 4   | Weather block: today card + hourly chart           | done  |
-| 5   | Multiple blocks (+, max 5, delete with confirm)    | next  |
-| 6   | Favourites tab (localStorage, max 5, limit modal)  |       |
+| 5   | Multiple blocks (+, max 5, delete with confirm)    | done  |
+| 6   | Favourites tab (localStorage, max 5, limit modal)  | next  |
 | 7   | Day / 5-day switch                                 |       |
 | 8   | Default city from IP                               |       |
 | 9   | Day / night look                                   |       |
