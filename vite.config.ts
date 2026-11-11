@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 import { cloudflareHeaders } from './build/headers.ts'
+import { inlineEntryCss } from './build/inlineCss.ts'
 
 // The OpenWeatherMap key never reaches the client bundle: in dev this proxy appends it, in production a Cloudflare Pages Function does the same.
 export default defineConfig(({ mode }) => {
@@ -10,7 +11,7 @@ export default defineConfig(({ mode }) => {
   const key = env.OWM_API_KEY ?? ''
 
   return {
-    plugins: [vue(), cloudflareHeaders()],
+    plugins: [vue(), inlineEntryCss(), cloudflareHeaders()],
     resolve: {
       alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
     },
