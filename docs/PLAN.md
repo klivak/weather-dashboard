@@ -4,7 +4,7 @@ Compare the weather in up to five cities side by side: current conditions, an ho
 
 ## Status
 
-Current step: **4 — Weather block**. Each step ends green on `npm run check` and with its own commits.
+Current step: **5 — Multiple blocks**. Each step ends green on `npm run check` and with its own commits.
 
 | #   | Step                                               | State |
 | --- | -------------------------------------------------- | ----- |
@@ -12,8 +12,8 @@ Current step: **4 — Weather block**. Each step ends green on `npm run check` a
 | 1   | API layer and key proxy                            | done  |
 | 2   | Shell: tokens, layout, header, tabs, i18n          | done  |
 | 3   | City search with autocomplete                      | done  |
-| 4   | Weather block: today card + hourly chart           | next  |
-| 5   | Multiple blocks (+, max 5, delete with confirm)    |       |
+| 4   | Weather block: today card + hourly chart           | done  |
+| 5   | Multiple blocks (+, max 5, delete with confirm)    | next  |
 | 6   | Favourites tab (localStorage, max 5, limit modal)  |       |
 | 7   | Day / 5-day switch                                 |       |
 | 8   | Default city from IP                               |       |
@@ -62,7 +62,7 @@ Decisions:
 - **Key stays server-side.** The client calls `/api/owm/...`; Vite's dev proxy (local) and a Pages Function (prod) append `appid`. Only `/data/2.5/weather`, `/data/2.5/forecast`, `/geo/1.0/direct` and `/geo/1.0/reverse` are allowed.
 - **Weather (OpenWeatherMap, free tier):** Current Weather for the card, 5 day / 3 hour Forecast for the chart and the 5-day view, `lang=en|uk`. Blocks store `lat/lon` plus names, never a free-text query.
 - **City autocomplete (Open-Meteo geocoding):** OpenWeatherMap's geocoder only matches whole names ("Lond" does not find London), so suggestions come from Open-Meteo's free, key-less prefix search: queried in the script the user types (Cyrillic → Ukrainian), with the other language fetched in parallel so each city has both names; districts and abandoned places filtered out; OpenWeatherMap `geo/1.0/direct` is the fallback when Open-Meteo is down or finds nothing.
-- **Hourly chart for today** = forecast points for the city's local date (3-hour steps, shifted by `timezone`), with the current reading as the first point.
+- **Hourly chart for today** = the live reading plus the forecast points left in the city's local day (3-hour steps, shifted by `timezone`); late in the day it continues into tomorrow until it has 8 points and is titled "Next 24 hours" instead of "Temperature today".
 - **5-day view** groups forecast points by the city's local date; mean, min and max temperature per day; the icon is the most frequent daytime condition.
 - **IP lookup:** `get.geojs.io` → `ipapi.co` → Kyiv fallback; cached for the session.
 - **Day / night:** `auto` follows the selected city's sunrise/sunset; manual `day` / `night` override; saved in `localStorage`.
