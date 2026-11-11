@@ -56,6 +56,11 @@ let chart: Chart<'line', number[], string> | undefined
 const hasIcons = computed(() => props.points.some((point) => point.icon))
 /** Horizontal insets of the plot area, so the icon strip lines up with the points. */
 const plotInset = ref({ left: 8, right: 8 })
+const plotWidth = ref(0)
+/** On narrow charts every other time label is shown (icons stay in every column), so labels never collide. */
+const labelStep = computed(() =>
+  plotWidth.value && plotWidth.value / Math.max(1, props.points.length) < 42 ? 2 : 1,
+)
 
 const hasRange = computed(() =>
   props.points.some((point) => point.min !== undefined && point.max !== undefined),
@@ -111,6 +116,7 @@ const trackPlotArea: Plugin<'line'> = {
     const left = Math.round(target.chartArea.left)
     const right = Math.round(target.width - target.chartArea.right)
     if (left !== plotInset.value.left || right !== plotInset.value.right) plotInset.value = { left, right }
+    plotWidth.value = Math.round(target.chartArea.right - target.chartArea.left)
   },
 }
 
@@ -199,7 +205,13 @@ function buildConfig(): ChartConfiguration<'line', number[], string> {
           offset: true,
           grid: { display: false },
           border: { display: false },
-          ticks: { color: c.text, font: { family: c.font, size: 12 }, maxRotation: 0, autoSkipPadding: 10 },
+          ticks: {
+            display: !hasIcons.value,
+            color: c.text,
+            font: { family: c.font, size: 12 },
+            maxRotation: 0,
+            autoSkipPadding: 10,
+          },
         },
         y: {
           suggestedMin: Math.floor(Math.min(...lows)) - 2,
@@ -274,7 +286,13 @@ watch(
         gridTemplateColumns: `repeat(${points.length}, minmax(0, 1fr))`,
       }"
     >
-      <li v-for="point in points" :key="point.title" class="chart__slot">
+      <li
+        v-for="(point, index) in points"
+        :key="point.title"
+        class="chart__slot"
+        :class="{ 'chart__slot--highlight': point.highlight }"
+      >
+        <span class="chart__label">{{ index % labelStep === 0 || point.highlight ? point.label : '' }}</span>
         <WeatherIcon v-if="point.icon" :code="point.icon.code" :day="point.icon.day" :size="26" />
         <span class="chart__pop">{{
           point.pop !== undefined && point.pop >= 0.1 ? `${Math.round(point.pop * 100)}%` : ''
@@ -315,7 +333,7 @@ watch(
 
 .chart__strip {
   display: grid;
-  margin: var(--space-1) 0 0;
+  margin: var(--space-2) 0 0;
   padding-block: 0;
   list-style: none;
 }
@@ -325,6 +343,19 @@ watch(
   justify-items: center;
   gap: 2px;
   min-width: 0;
+}
+
+/* Centred over its column; may overflow into an empty neighbour (labels alternate on narrow charts). */
+.chart__label {
+  min-height: 1.3em;
+  color: var(--text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.chart__slot--highlight .chart__label {
+  color: var(--text);
+  font-weight: var(--weight-bold);
 }
 
 .chart__pop {

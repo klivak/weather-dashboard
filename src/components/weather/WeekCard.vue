@@ -138,20 +138,29 @@ const rows = computed(() =>
   }
 }
 
+/* A clean table: fixed columns so the numbers line up in every row, thin dividers, today on a soft fill. */
 .day {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 40px 48px minmax(72px, auto) 52px;
+  grid-template-columns: minmax(0, 1fr) 40px 44px 72px 50px;
   align-items: center;
-  gap: var(--space-2);
+  column-gap: var(--space-2);
   min-height: 56px;
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-sm);
-  background: var(--surface-sunken);
   font-variant-numeric: tabular-nums;
 }
 
+.day + .day {
+  box-shadow: 0 -1px 0 var(--border);
+}
+
 .day--today {
-  box-shadow: inset 3px 0 0 var(--accent);
+  background: var(--surface-sunken);
+}
+
+.day--today,
+.day--today + .day {
+  box-shadow: none;
 }
 
 .day--today .day__name {
@@ -164,13 +173,23 @@ const rows = computed(() =>
 }
 
 .day__name {
+  overflow: hidden;
   font-weight: var(--weight-medium);
-  text-transform: capitalize;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.day__name::first-letter {
+  text-transform: uppercase;
 }
 
 .day__date {
   color: var(--text-muted);
   font-size: var(--text-xs);
+}
+
+.day__icon {
+  justify-self: center;
 }
 
 .day__avg {
@@ -187,8 +206,8 @@ const rows = computed(() =>
 }
 
 .day__range-sep {
-  margin-inline: 2px;
-  opacity: 0.6;
+  margin-inline: 3px;
+  opacity: 0.5;
 }
 
 .day__rain {
@@ -208,9 +227,13 @@ const rows = computed(() =>
 
 @media (max-width: 400px) {
   .day {
-    grid-template-columns: minmax(0, 1fr) 34px 40px auto 44px;
-    gap: var(--space-1);
+    grid-template-columns: minmax(0, 1fr) 32px 36px 62px 44px;
+    column-gap: var(--space-1);
     padding-inline: var(--space-2);
+  }
+
+  .day__range {
+    font-size: var(--text-xs);
   }
 }
 </style>
