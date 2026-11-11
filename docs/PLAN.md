@@ -4,7 +4,7 @@ Compare the weather in up to five cities side by side: current conditions, an ho
 
 ## Status
 
-Current step: **10 — Polish**. Each step ends green on `npm run check` and with its own commits.
+Current step: **11 — Deploy**. Each step ends green on `npm run check` and with its own commits.
 
 | #   | Step                                               | State |
 | --- | -------------------------------------------------- | ----- |
@@ -18,8 +18,8 @@ Current step: **10 — Polish**. Each step ends green on `npm run check` and wit
 | 7   | Day / 5-day switch                                 | done  |
 | 8   | Default city from IP                               | done  |
 | 9   | Day / night look                                   | done  |
-| 10  | Polish: a11y, responsive 360–1200, e2e, README     | next  |
-| 11  | Deploy to Cloudflare Pages                         |       |
+| 10  | Polish: a11y, responsive 360–1200, e2e, README     | done  |
+| 11  | Deploy to Cloudflare Pages                         | next  |
 
 ## Requirements
 
@@ -73,7 +73,7 @@ Decisions:
 ## Quality bar
 
 - TypeScript strict with `noUncheckedIndexedAccess`; no `any`.
-- Domain logic covered by Vitest; components with Vue Test Utils for search, limits and modals; one Playwright smoke run before deploy.
+- Domain logic covered by Vitest; components with Vue Test Utils for search, limits and modals; Playwright end-to-end tests on the production build (desktop 1200px and mobile 360px) with mocked APIs and axe WCAG 2.2 AA checks in both looks (`npm run e2e`).
 - Accessibility: autocomplete follows the WAI-ARIA combobox pattern, modals trap focus and close on Esc, visible focus, reduced motion respected.
 - Every loading, empty and error state is designed.
 - Layout checked at 360, 768 and 1200 px.
