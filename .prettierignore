@@ -1,0 +1,6 @@
+dist
+coverage
+.wrangler
+tmp
+test-results
+package-lock.json
