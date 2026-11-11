@@ -1,8 +1,14 @@
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import App from './App.vue'
+
+// The shell tests do not need weather; keep requests pending so no network is touched.
+vi.mock('@/api/owm', () => ({
+  getCurrentWeather: () => new Promise(() => {}),
+  getForecast: () => new Promise(() => {}),
+}))
 
 let wrapper: VueWrapper | undefined
 
@@ -45,7 +51,7 @@ describe('App shell', () => {
     expect(app.find('#panel-favourites').isVisible()).toBe(true)
     expect(app.find('#panel-home').isVisible()).toBe(false)
 
-    await app.find('#panel-favourites button').trigger('click')
+    await app.find('#panel-favourites .empty button').trigger('click')
     expect(home?.attributes('aria-selected')).toBe('true')
     expect(location.hash).toBe('')
   })

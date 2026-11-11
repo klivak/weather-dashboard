@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watchEffect } from 'vue'
 import { completeCityNames } from '@/api/cities'
+import { KYIV } from '@/api/ipLocation'
 import type { City } from '@/api/models'
 import EmptyState from '@/components/base/EmptyState.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
@@ -9,7 +10,7 @@ import IconHome from '@/components/icons/IconHome.vue'
 import IconStar from '@/components/icons/IconStar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
-import CitySearch from '@/components/search/CitySearch.vue'
+import WeatherBlock from '@/components/weather/WeatherBlock.vue'
 import { useHashTab, type TabId } from '@/composables/useHashTab'
 import { MAX_FAVOURITES } from '@/domain/limits'
 import { useI18n } from '@/i18n'
@@ -18,7 +19,7 @@ import { useSettingsStore } from '@/stores/settings'
 const { t, locale } = useI18n()
 const settings = useSettingsStore()
 const tab = useHashTab()
-const city = ref<City | null>(null)
+const city = ref<City | null>(KYIV)
 
 async function onSelect(next: City) {
   city.value = next
@@ -61,7 +62,7 @@ watchEffect(() => {
         tabindex="0"
       >
         <h2 class="visually-hidden">{{ t('home.heading') }}</h2>
-        <div class="app__search"><CitySearch :city="city" @select="onSelect" /></div>
+        <WeatherBlock :city="city" @update:city="onSelect" />
       </section>
 
       <section
@@ -102,10 +103,6 @@ watchEffect(() => {
 
 .app__panel {
   padding-block: var(--space-6);
-}
-
-.app__search {
-  max-width: 420px;
 }
 
 .app__panel:focus-visible {
