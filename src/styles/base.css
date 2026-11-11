@@ -122,3 +122,8 @@ svg {
     scroll-behavior: auto !important;
   }
 }
+
+/* Lock page scroll behind an open modal; scrollbar-gutter keeps the layout from shifting. */
+:root:has(dialog[open]) {
+  overflow: hidden;
+}
