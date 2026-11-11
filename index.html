@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="day">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -9,10 +9,29 @@
       content="Compare current weather, hourly temperature and the 5-day forecast for up to five cities side by side."
     />
     <meta name="theme-color" content="#bfdcfa" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Weather Dashboard" />
+    <meta
+      property="og:description"
+      content="Compare current weather, hourly temperature and the 5-day forecast for up to five cities side by side."
+    />
     <title>Weather Dashboard</title>
+    <script>
+      // Pick the day or night look before the first paint (the app refines "auto" with the city's sunset).
+      ;(function () {
+        var mode = 'auto'
+        try {
+          mode = JSON.parse(localStorage.getItem('wd:settings') || '{}').theme || 'auto'
+        } catch (e) {}
+        var hour = new Date().getHours()
+        var theme = mode === 'day' || mode === 'night' ? mode : hour >= 7 && hour < 19 ? 'day' : 'night'
+        document.documentElement.dataset.theme = theme
+      })()
+    </script>
   </head>
   <body>
     <div id="app"></div>
+    <noscript>Weather Dashboard needs JavaScript to load the forecast.</noscript>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

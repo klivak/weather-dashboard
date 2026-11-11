@@ -25,6 +25,7 @@ const tabs = computed(() => [
 ])
 
 /** Apply the look; a View Transition crossfades the sky where supported (never under reduced motion). */
+let firstApply = true
 function applyTheme(theme: string) {
   const root = document.documentElement
   const apply = () => {
@@ -34,11 +35,12 @@ function applyTheme(theme: string) {
       ?.setAttribute('content', theme === 'night' ? '#070c1f' : '#bfdcfa')
   }
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-  if (root.dataset.theme && root.dataset.theme !== theme && !reduced && document.startViewTransition) {
+  if (!firstApply && root.dataset.theme !== theme && !reduced && document.startViewTransition) {
     document.startViewTransition(apply)
   } else {
     apply()
   }
+  firstApply = false
 }
 
 watch(() => themeStore.theme, applyTheme, { immediate: true })
