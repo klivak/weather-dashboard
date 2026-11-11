@@ -5,7 +5,7 @@ import type { City } from '@/api/models'
 import { useCitySearch } from './useCitySearch'
 
 const searchCities = vi.hoisted(() => vi.fn())
-vi.mock('@/api/owm', () => ({ searchCities }))
+vi.mock('@/api/cities', () => ({ searchCities }))
 
 const lviv: City = {
   id: '49.84,24.03',
@@ -18,7 +18,7 @@ const lviv: City = {
 
 function setup() {
   const scope = effectScope()
-  const search = scope.run(() => useCitySearch({ delayMs: 300 }))!
+  const search = scope.run(() => useCitySearch({ delayMs: 300, locale: () => 'uk' }))!
   return { scope, search }
 }
 
@@ -46,7 +46,7 @@ describe('useCitySearch', () => {
 
     await vi.advanceTimersByTimeAsync(1)
     expect(searchCities).toHaveBeenCalledTimes(1)
-    expect(searchCities.mock.calls[0]?.[0]).toBe('Lviv')
+    expect(searchCities.mock.calls[0]?.slice(0, 2)).toEqual(['Lviv', 'uk'])
     expect(search.status.value).toBe('success')
     expect(search.results.value).toEqual([lviv])
     expect(search.resultsFor.value).toBe('Lviv')
@@ -76,7 +76,7 @@ describe('useCitySearch', () => {
     search.query.value = 'Lv'
     await nextTick()
     await vi.advanceTimersByTimeAsync(300)
-    const firstSignal = searchCities.mock.calls[0]?.[1] as AbortSignal
+    const firstSignal = searchCities.mock.calls[0]?.[2] as AbortSignal
 
     search.query.value = 'Kyiv'
     await nextTick()

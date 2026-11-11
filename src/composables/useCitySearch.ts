@@ -1,12 +1,14 @@
 import { onScopeDispose, ref, shallowRef, watch } from 'vue'
 import type { ApiErrorKind } from '@/api/http'
 import { ApiError, isAbortError } from '@/api/http'
-import type { City } from '@/api/models'
-import { searchCities } from '@/api/owm'
+import { searchCities } from '@/api/cities'
+import type { City, Locale } from '@/api/models'
 
 export type SearchStatus = 'idle' | 'loading' | 'success' | 'error'
 
 export interface CitySearchOptions {
+  /** Interface language, read on every request. */
+  locale?: () => Locale
   delayMs?: number
   minLength?: number
 }
@@ -15,7 +17,7 @@ export interface CitySearchOptions {
  * Debounced city lookup bound to a query string. Typing shows `loading` immediately, only the latest request wins,
  * and `setQuietly` changes the text (e.g. to the chosen city's name) without searching.
  */
-export function useCitySearch({ delayMs = 300, minLength = 2 }: CitySearchOptions = {}) {
+export function useCitySearch({ locale = () => 'en', delayMs = 300, minLength = 2 }: CitySearchOptions = {}) {
   const query = ref('')
   const results = shallowRef<City[]>([])
   const status = ref<SearchStatus>('idle')
@@ -40,7 +42,7 @@ export function useCitySearch({ delayMs = 300, minLength = 2 }: CitySearchOption
     status.value = 'loading'
     errorKind.value = null
     try {
-      const found = await searchCities(text, current.signal)
+      const found = await searchCities(text, locale(), current.signal)
       if (controller !== current) return
       results.value = found
       resultsFor.value = text
