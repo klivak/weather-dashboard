@@ -32,8 +32,8 @@ export interface ChartPoint {
 
 const props = defineProps<{
   points: ChartPoint[]
+  /** Used as the caption of the hidden data table; the visible caption is rendered by the parent figure. */
   title: string
-  subtitle: string
   /** One-sentence description for screen readers. */
   summary: string
   /** Index of the first point of the next day, marked with a dashed line and `boundaryLabel`. */
@@ -223,7 +223,11 @@ function render() {
   chart = new Chart(canvas.value, buildConfig())
 }
 
-onMounted(render)
+onMounted(() => {
+  // Building the chart is the heaviest task on the page; let the browser paint the card first.
+  const idle = window.requestIdleCallback ?? ((callback: () => void) => window.setTimeout(callback, 1))
+  idle(() => render(), { timeout: 300 })
+})
 onBeforeUnmount(() => chart?.destroy())
 
 // New data or labels: rebuild on the same canvas. Theme: colours come from CSS, so rebuild after the DOM updates.
@@ -235,11 +239,7 @@ watch(
 </script>
 
 <template>
-  <figure class="chart">
-    <figcaption class="chart__caption">
-      <span class="chart__title">{{ title }}</span>
-      <span class="chart__subtitle">{{ subtitle }}</span>
-    </figcaption>
+  <div class="chart">
     <div class="chart__canvas">
       <canvas ref="canvas" role="img" :aria-label="summary" />
     </div>
@@ -267,32 +267,12 @@ watch(
         </tr>
       </tbody>
     </table>
-  </figure>
+  </div>
 </template>
 
 <style scoped>
 .chart {
-  display: grid;
-  gap: var(--space-3);
   min-width: 0;
-  margin: 0;
-}
-
-.chart__caption {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-1) var(--space-3);
-}
-
-.chart__title {
-  font-weight: var(--weight-bold);
-}
-
-.chart__subtitle {
-  color: var(--text-muted);
-  font-size: var(--text-xs);
 }
 
 .chart__canvas {

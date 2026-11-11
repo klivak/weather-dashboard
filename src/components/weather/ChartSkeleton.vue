@@ -1,7 +1,6 @@
 <template>
   <!-- Same footprint as TempChart, shown while its code chunk or data is on the way. -->
   <div class="chart-skeleton" aria-hidden="true">
-    <span class="chart-skeleton__caption" />
     <span class="chart-skeleton__plot" />
   </div>
 </template>
@@ -24,11 +23,6 @@
   );
   background-size: 200% 100%;
   animation: shimmer 1.2s ease-in-out infinite;
-}
-
-.chart-skeleton__caption {
-  width: 60%;
-  height: 14px;
 }
 
 .chart-skeleton__plot {

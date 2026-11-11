@@ -30,7 +30,7 @@ function measure() {
 let observer: ResizeObserver | undefined
 
 onMounted(() => {
-  measure()
+  requestAnimationFrame(measure)
   if (typeof ResizeObserver === 'undefined') return
   observer = new ResizeObserver(measure)
   for (const button of buttons.value ?? []) observer.observe(button)

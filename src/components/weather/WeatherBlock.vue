@@ -236,7 +236,10 @@ const errorText = computed(() => {
           <span v-for="cell in 6" :key="cell" class="skeleton__cell" />
         </div>
       </div>
-      <ChartSkeleton />
+      <div class="block__chart skeleton">
+        <span class="skeleton__line skeleton__line--meta" />
+        <ChartSkeleton />
+      </div>
     </div>
 
     <div
@@ -246,15 +249,19 @@ const errorText = computed(() => {
     >
       <WeatherCard v-if="view === 'day'" :city="city" :weather="current" />
       <WeekCard v-else :city="city" :days="days" :timezone="timezone" :today="today" />
-      <TempChart
-        v-if="chart.points.length"
-        :points="chart.points"
-        :title="chart.title"
-        :subtitle="chart.subtitle"
-        :summary="chart.summary"
-        :boundary-index="view === 'day' ? boundaryIndex : undefined"
-        :boundary-label="t('chart.tomorrow')"
-      />
+      <figure v-if="chart.points.length" class="block__chart">
+        <figcaption class="block__chart-caption">
+          <span class="block__chart-title">{{ chart.title }}</span>
+          <span class="block__chart-subtitle">{{ chart.subtitle }}</span>
+        </figcaption>
+        <TempChart
+          :points="chart.points"
+          :title="chart.title"
+          :summary="chart.summary"
+          :boundary-index="view === 'day' ? boundaryIndex : undefined"
+          :boundary-label="t('chart.tomorrow')"
+        />
+      </figure>
     </div>
   </section>
 </template>
@@ -361,6 +368,30 @@ const errorText = computed(() => {
   }
 }
 
+.block__chart {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  margin: 0;
+}
+
+.block__chart-caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+}
+
+.block__chart-title {
+  font-weight: var(--weight-bold);
+}
+
+.block__chart-subtitle {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
 .block__body--refreshing {
   opacity: 0.6;
 }
@@ -387,7 +418,8 @@ const errorText = computed(() => {
 }
 
 .skeleton__now,
-.skeleton__grid {
+.skeleton__grid,
+.skeleton > .chart-skeleton {
   background: none !important;
   animation: none !important;
 }
