@@ -4,15 +4,15 @@ Compare the weather in up to five cities side by side: current conditions, an ho
 
 ## Status
 
-Current step: **3 — City search**. Each step ends green on `npm run check` and with its own commits.
+Current step: **4 — Weather block**. Each step ends green on `npm run check` and with its own commits.
 
 | #   | Step                                               | State |
 | --- | -------------------------------------------------- | ----- |
 | 0   | Tooling: Vite, TS strict, ESLint, Prettier, Vitest | done  |
 | 1   | API layer and key proxy                            | done  |
 | 2   | Shell: tokens, layout, header, tabs, i18n          | done  |
-| 3   | City search with autocomplete                      | next  |
-| 4   | Weather block: today card + hourly chart           |       |
+| 3   | City search with autocomplete                      | done  |
+| 4   | Weather block: today card + hourly chart           | next  |
 | 5   | Multiple blocks (+, max 5, delete with confirm)    |       |
 | 6   | Favourites tab (localStorage, max 5, limit modal)  |       |
 | 7   | Day / 5-day switch                                 |       |
@@ -47,7 +47,7 @@ Extras:
 
 ```
 src/
-  api/          fetch wrapper, OpenWeatherMap client, IP lookup, response types
+  api/          fetch wrapper, OpenWeatherMap client, Open-Meteo city search, IP lookup, response types
   domain/       pure logic: forecast grouping/averages, limits, day/night (unit tested)
   stores/       Pinia: blocks, favourites, settings (locale, units, theme)
   composables/  useWeather, useDebounced, useModal, ...
@@ -59,8 +59,9 @@ functions/api/owm/[[path]].ts   Cloudflare Pages Function: allow-listed proxy th
 
 Decisions:
 
-- **Key stays server-side.** The client calls `/api/owm/...`; Vite's dev proxy (local) and a Pages Function (prod) append `appid`. Only `/data/2.5/weather`, `/data/2.5/forecast` and `/geo/1.0/direct` are allowed.
-- **Endpoints (free tier):** Geocoding `direct` for autocomplete (limit 5, `local_names` for uk), Current Weather for the card, 5 day / 3 hour Forecast for the chart and the 5-day view. Blocks store `lat/lon` plus a display name, never a free-text query.
+- **Key stays server-side.** The client calls `/api/owm/...`; Vite's dev proxy (local) and a Pages Function (prod) append `appid`. Only `/data/2.5/weather`, `/data/2.5/forecast`, `/geo/1.0/direct` and `/geo/1.0/reverse` are allowed.
+- **Weather (OpenWeatherMap, free tier):** Current Weather for the card, 5 day / 3 hour Forecast for the chart and the 5-day view, `lang=en|uk`. Blocks store `lat/lon` plus names, never a free-text query.
+- **City autocomplete (Open-Meteo geocoding):** OpenWeatherMap's geocoder only matches whole names ("Lond" does not find London), so suggestions come from Open-Meteo's free, key-less prefix search: queried in the script the user types (Cyrillic → Ukrainian), with the other language fetched in parallel so each city has both names; districts and abandoned places filtered out; OpenWeatherMap `geo/1.0/direct` is the fallback when Open-Meteo is down or finds nothing.
 - **Hourly chart for today** = forecast points for the city's local date (3-hour steps, shifted by `timezone`), with the current reading as the first point.
 - **5-day view** groups forecast points by the city's local date; mean, min and max temperature per day; the icon is the most frequent daytime condition.
 - **IP lookup:** `get.geojs.io` → `ipapi.co` → Kyiv fallback; cached for the session.
