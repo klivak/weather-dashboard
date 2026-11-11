@@ -132,3 +132,39 @@ test('runs under the production Content-Security-Policy without violations', asy
   await page.getByRole('radio', { name: 'Night' }).click()
   expect(violations).toEqual([])
 })
+
+test('shows a readable error when the weather service fails and recovers on retry', async ({ page }) => {
+  let failing = true
+  await page.route('**/api/owm/data/2.5/**', (route) =>
+    failing ? route.fulfill({ status: 500, body: '{}' }) : route.fallback(),
+  )
+  await page.goto('/')
+  const alert = page.locator('#panel-home [role="alert"]').first()
+  await expect(alert).toContainText('Couldn’t load the weather')
+  failing = false
+  await alert.getByRole('button', { name: 'Try again' }).click()
+  await expect(page.locator('.card__temp').first()).toBeVisible()
+})
+
+test('starring a sixth favourite opens the swap dialog', async ({ page }) => {
+  const city = (n: number) => ({
+    id: `c${n}`,
+    name: `City ${n}`,
+    names: { en: `City ${n}` },
+    country: 'UA',
+    lat: n,
+    lon: n,
+  })
+  await page.addInitScript((cities) => {
+    localStorage.setItem('wd:favourites', JSON.stringify({ v: 1, cities }))
+  }, [1, 2, 3, 4, 5].map(city))
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Add Kyiv to favourites' }).click()
+  const dialog = page.getByRole('dialog', { name: 'You already have 5 favourites' })
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('listitem')).toHaveCount(5)
+  await dialog.getByRole('button', { name: 'Remove City 1 and add Kyiv' }).click()
+  await expect(dialog).toBeHidden()
+  await expect(page.getByRole('tab', { name: /Favourites/ })).toContainText('5')
+  await expect(page.getByRole('button', { name: 'Remove Kyiv from favourites' })).toBeVisible()
+})
