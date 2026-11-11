@@ -329,7 +329,7 @@ watch(
 
 .chart__pop {
   min-height: 1.2em;
-  color: var(--icon-rain);
+  color: var(--rain-text);
   font-size: 11px;
   font-weight: var(--weight-medium);
   font-variant-numeric: tabular-nums;

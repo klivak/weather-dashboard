@@ -190,7 +190,7 @@ const rows = computed(() =>
   align-items: center;
   justify-content: flex-end;
   gap: 2px;
-  color: var(--icon-rain);
+  color: var(--rain-text);
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
 }

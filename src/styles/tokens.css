@@ -92,6 +92,8 @@
   --icon-cloud-back: #b4c3d9;
   --icon-cloud-dark: #cfd8e5;
   --icon-rain: #3b82f6;
+  /* Precipitation figures as text: darker than the icon colour for 4.5:1 contrast on light surfaces. */
+  --rain-text: #1f5bc4;
   --icon-snow: #7aa7d9;
   --icon-mist: #9aa9bf;
 }
@@ -128,6 +130,7 @@
   --icon-cloud-back: #8592b3;
   --icon-cloud-dark: #aab4cc;
   --icon-rain: #7fb0ff;
+  --rain-text: #9cc2ff;
   --icon-snow: #c7dcff;
   --icon-mist: #8f9bbb;
 }

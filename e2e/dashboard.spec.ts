@@ -4,6 +4,13 @@ import { readFileSync } from 'node:fs'
 import { mockApis } from './fixtures.ts'
 
 async function expectNoA11yViolations(page: Page) {
+  // Let entrance animations finish: mid-fade text has reduced opacity and would fail contrast checks.
+  await page.waitForFunction(() =>
+    document
+      .getAnimations()
+      .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+      .every((animation) => animation.playState === 'finished'),
+  )
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
     .analyze()
