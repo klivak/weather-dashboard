@@ -60,19 +60,6 @@ export interface OwmForecast {
   }
 }
 
-export interface GeoJsResponse {
-  latitude?: string
-  longitude?: string
-  city?: string
-}
-
-export interface IpApiResponse {
-  latitude?: number
-  longitude?: number
-  city?: string
-  error?: boolean
-}
-
 export interface OmPlace {
   id: number
   name: string

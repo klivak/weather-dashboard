@@ -165,6 +165,16 @@ describe('weather', () => {
 })
 
 describe('locateByIp', () => {
+  it('gives up on a stalled early lookup and falls through to the next provider', async () => {
+    vi.useFakeTimers()
+    window.__wdIpLookup = new Promise(() => {})
+    fetchMock.mockResolvedValueOnce(jsonResponse({ latitude: 49.84, longitude: 24.03 }))
+    const pending = locateByIp()
+    await vi.advanceTimersByTimeAsync(4000)
+    await expect(pending).resolves.toEqual({ lat: 49.84, lon: 24.03 })
+    vi.useRealTimers()
+  })
+
   it('uses the lookup started by index.html and skips the first provider when that failed', async () => {
     window.__wdIpLookup = Promise.resolve({ latitude: '50.45', longitude: '30.52', city: 'Kyiv' })
     await expect(locateByIp()).resolves.toEqual({ lat: 50.45, lon: 30.52, city: 'Kyiv' })

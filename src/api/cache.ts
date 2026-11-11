@@ -8,7 +8,7 @@ interface Entry {
 export interface CachedJsonOptions {
   signal?: AbortSignal
   ttlMs?: number
-  /** Ignore cached answers (memory and HTTP) and store the new one. */
+  /** Ignore cached answers (memory, browser HTTP cache and, via Cache-Control: no-cache, the edge). */
   fresh?: boolean
 }
 
@@ -24,12 +24,20 @@ export interface CachedJson {
 export function createCachedJson(defaultTtlMs: number, now: () => number = Date.now): CachedJson {
   const entries = new Map<string, Entry>()
 
+  /** Drop expired entries so a long session does not keep every answer it ever saw. */
+  function prune() {
+    const time = now()
+    for (const [key, entry] of entries) if (entry.expires <= time) entries.delete(key)
+  }
+
   function cached<T>(url: string, options: CachedJsonOptions = {}): Promise<T> {
     const hit = entries.get(url)
     if (hit && hit.expires > now() && !options.fresh)
       return withAbort(hit.promise as Promise<T>, options.signal)
 
-    const promise = getJson<T>(url, options.fresh ? { cache: 'no-cache' } : {})
+    // "reload" (not "no-cache") is the mode that sends Cache-Control: no-cache, which the proxy reads to skip the edge.
+    const promise = getJson<T>(url, options.fresh ? { cache: 'reload' } : {})
+    prune()
     const entry: Entry = { expires: now() + (options.ttlMs ?? defaultTtlMs), promise }
     entries.set(url, entry)
     promise.catch(() => {

@@ -110,7 +110,49 @@ describe('useWeather', () => {
 })
 
 describe('useWeather snapshots', () => {
-  beforeEach(() => localStorage.clear())
+  const condition = { id: 800, main: 'Clear', description: 'clear', icon: '01d' }
+  const validCurrent = {
+    dt: 1,
+    timezone: 0,
+    sunrise: 0,
+    sunset: 0,
+    temp: 5,
+    feelsLike: 3,
+    tempMin: 4,
+    tempMax: 6,
+    humidity: 50,
+    pressure: 1010,
+    windSpeed: 2,
+    windDeg: 0,
+    clouds: 0,
+    visibility: 10000,
+    condition,
+  }
+  const validForecast = {
+    timezone: 0,
+    sunrise: 0,
+    sunset: 0,
+    points: [
+      {
+        dt: 2,
+        temp: 6,
+        feelsLike: 5,
+        tempMin: 5,
+        tempMax: 7,
+        humidity: 50,
+        windSpeed: 2,
+        pop: 0,
+        isDay: true,
+        condition,
+      },
+    ],
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+    api.getCurrentWeather.mockResolvedValue(validCurrent)
+    api.getForecast.mockResolvedValue(validForecast)
+  })
 
   it('shows the last data for the city instantly, then refreshes it quietly', async () => {
     const first = setup()
@@ -120,7 +162,7 @@ describe('useWeather snapshots', () => {
     api.getCurrentWeather.mockImplementation(() => new Promise(() => {}))
     const { weather } = setup()
     expect(weather.status.value).toBe('success')
-    expect(weather.current.value).toEqual({ temp: 5, lang: 'en' })
+    expect(weather.current.value).toEqual(validCurrent)
     expect(api.getCurrentWeather).toHaveBeenCalledTimes(2)
   })
 

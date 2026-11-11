@@ -73,6 +73,29 @@ describe('createCachedJson', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
+  it('bypasses memory and HTTP caches with cache mode "reload" when fresh data is asked for', async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(jsonResponse({ n: 1 })))
+    vi.stubGlobal('fetch', fetchMock)
+    const cached = createCachedJson(1000)
+    await cached('/a')
+    await cached('/a', { fresh: true })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({ cache: 'reload' })
+  })
+
+  it('forgets expired entries', async () => {
+    let time = 0
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(jsonResponse({ n: 1 })))
+    vi.stubGlobal('fetch', fetchMock)
+    const cached = createCachedJson(1000, () => time)
+    await cached('/a')
+    time = 2000
+    await cached('/b')
+    time = 2500
+    await cached('/a')
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+  })
+
   it('does not cache failures', async () => {
     const fetchMock = vi
       .fn()

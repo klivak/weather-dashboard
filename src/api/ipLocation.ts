@@ -1,7 +1,6 @@
 import { isRecord } from '@/utils/storage'
 import { getJson } from './http'
 import type { City, Coords } from './models'
-import type { GeoJsResponse, IpApiResponse } from './types'
 
 export const KYIV: City = {
   id: '50.45,30.52',
@@ -36,16 +35,15 @@ export const PROVIDERS: Provider[] = [
   {
     url: 'https://get.geojs.io/v1/ip/geo.json',
     parse: (body) => {
-      const { latitude, longitude, city } = (isRecord(body) ? body : {}) as GeoJsResponse
-      return toLocation(Number(latitude ?? NaN), Number(longitude ?? NaN), city)
+      if (!isRecord(body)) return null
+      return toLocation(Number(body.latitude ?? NaN), Number(body.longitude ?? NaN), body.city)
     },
   },
   {
     url: 'https://ipapi.co/json/',
     parse: (body) => {
-      const data = (isRecord(body) ? body : {}) as IpApiResponse
-      if (data.error) return null
-      return toLocation(data.latitude ?? NaN, data.longitude ?? NaN, data.city)
+      if (!isRecord(body) || body.error) return null
+      return toLocation(Number(body.latitude ?? NaN), Number(body.longitude ?? NaN), body.city)
     },
   },
 ]
@@ -75,6 +73,26 @@ function takeEarlyLookup(): Promise<unknown> | undefined {
   return early
 }
 
+/** The early lookup's answer, or null if it takes longer than `ms` or the caller aborts. */
+function settleWithin(promise: Promise<unknown>, ms: number, signal?: AbortSignal): Promise<unknown> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(null), ms)
+    const stop = () => {
+      clearTimeout(timer)
+      resolve(null)
+    }
+    signal?.addEventListener('abort', stop, { once: true })
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        signal?.removeEventListener('abort', stop)
+        resolve(value)
+      },
+      () => stop(),
+    )
+  })
+}
+
 function remember(location: IpLocation): IpLocation {
   try {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(location))
@@ -95,7 +113,9 @@ export async function locateByIp(signal?: AbortSignal): Promise<IpLocation | nul
   // index.html may already have asked the first provider while the app was downloading.
   const early = takeEarlyLookup()
   if (early) {
-    const location = PROVIDERS[0]?.parse(await early) ?? null
+    const body = await settleWithin(early, TIMEOUT_MS, signal)
+    if (signal?.aborted) return null
+    const location = PROVIDERS[0]?.parse(body) ?? null
     if (location) return remember(location)
   }
 
